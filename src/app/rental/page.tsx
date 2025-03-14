@@ -3,18 +3,16 @@
 import React, { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/ui/SearchBar";
-import TabView from "@/components/ui/TabView";
 import NFTCard from "@/components/ui/NFTCard";
-import Button from "@/components/ui/Button";
-import { mockNFTs, getRecommendedNFTs, getLatestNFTs } from "@/data/mockData";
-import { FaWallet } from "react-icons/fa";
+import { getRentalNFTs } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
 
-export default function Home() {
+export default function RentalPage() {
   const { t } = useLocale();
-  const [searchResults, setSearchResults] = useState<typeof mockNFTs | null>(
-    null
-  );
+  const [searchResults, setSearchResults] = useState<ReturnType<
+    typeof getRentalNFTs
+  > | null>(null);
+  const rentalNFTs = getRentalNFTs();
 
   const handleSearch = (query: string) => {
     if (!query.trim()) {
@@ -22,7 +20,7 @@ export default function Home() {
       return;
     }
 
-    const results = mockNFTs.filter(
+    const results = rentalNFTs.filter(
       (nft) =>
         nft.name.toLowerCase().includes(query.toLowerCase()) ||
         nft.description.toLowerCase().includes(query.toLowerCase())
@@ -30,9 +28,9 @@ export default function Home() {
     setSearchResults(results);
   };
 
-  const renderNFTGrid = (nfts: typeof mockNFTs) => {
+  const renderNFTGrid = (nfts: ReturnType<typeof getRentalNFTs>) => {
     return (
-      <div className="grid grid-cols-2 gap-[16px] mb-[100px]">
+      <div className="grid grid-cols-2 gap-[16px] mb-[83px]">
         {nfts.map((nft) => (
           <NFTCard
             key={nft.id}
@@ -41,7 +39,7 @@ export default function Home() {
             image={nft.image}
             price={nft.price}
             rarity={nft.rarity}
-            isRental={nft.isForRent}
+            isRental={true}
             rentalPrice={nft.rentalPrice}
           />
         ))}
@@ -49,39 +47,18 @@ export default function Home() {
     );
   };
 
-  const tabs = [
-    {
-      label: t("home.all"),
-      content: renderNFTGrid(mockNFTs),
-    },
-    {
-      label: t("home.recommended"),
-      content: renderNFTGrid(getRecommendedNFTs()),
-    },
-    {
-      label: t("home.latest"),
-      content: renderNFTGrid(getLatestNFTs()),
-    },
-  ];
-
   return (
     <MobileLayout>
       <div className="p-[16px]">
         <div className="flex justify-between items-center mb-[16px]">
-          <h1 className="text-xl font-bold">{t("app.name")}</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
-            onClick={() => alert(t("common.connectWallet"))}
-          >
-            <FaWallet className="text-[14px]" />
-            <span>{t("common.connectWallet")}</span>
-          </Button>
+          <h1 className="text-xl font-bold">{t("rental.market")}</h1>
         </div>
 
-        <div className="mb-6">
-          <SearchBar onSearch={handleSearch} placeholder={t("common.search")} />
+        <div className="mb-[24px]">
+          <SearchBar
+            onSearch={handleSearch}
+            placeholder={t("common.searchRental")}
+          />
         </div>
 
         {searchResults ? (
@@ -106,7 +83,7 @@ export default function Home() {
             )}
           </div>
         ) : (
-          <TabView tabs={tabs} />
+          renderNFTGrid(rentalNFTs)
         )}
       </div>
     </MobileLayout>
