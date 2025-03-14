@@ -24,6 +24,8 @@ export interface User {
   avatar: string;
   ownedNFTs: string[];
   rentedNFTs: string[];
+  favoriteNFTs: string[];
+  balance: number;
 }
 
 export type TabType = "all" | "recommended" | "latest";

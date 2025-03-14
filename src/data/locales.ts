@@ -21,7 +21,7 @@ const locales: LocaleData = {
     "common.connectWallet": "Connect Wallet",
 
     // TabBar
-    "tabbar.home": "Home",
+    "tabbar.home": "Value ID",
     "tabbar.rental": "Rental",
     "tabbar.inventory": "Inventory",
     "tabbar.profile": "Profile",
@@ -42,6 +42,7 @@ const locales: LocaleData = {
     "inventory.title": "My Inventory",
     "inventory.owned": "Owned",
     "inventory.rented": "Rented",
+    "inventory.favorites": "Favorites",
     "inventory.total": "Total: {count} NFTs",
     "inventory.filter": "Filter",
     "inventory.sell": "Sell",
@@ -125,7 +126,7 @@ const locales: LocaleData = {
     "common.connectWallet": "连接钱包",
 
     // TabBar
-    "tabbar.home": "首页",
+    "tabbar.home": "Value ID",
     "tabbar.rental": "租赁",
     "tabbar.inventory": "库存",
     "tabbar.profile": "我的",
@@ -146,6 +147,7 @@ const locales: LocaleData = {
     "inventory.title": "我的库存",
     "inventory.owned": "持有",
     "inventory.rented": "已租",
+    "inventory.favorites": "收藏",
     "inventory.total": "共 {count} 个NFT",
     "inventory.filter": "筛选",
     "inventory.sell": "出售",

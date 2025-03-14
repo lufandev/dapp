@@ -21,15 +21,25 @@ const Select: React.FC<SelectProps> = ({
   return (
     <div className="mb-[16px] relative">
       {label && (
-        <label className="block text-[0.875rem] text-[#1a1a1a] dark:text-[#ffffff] font-[500] mb-[8px]">
+        <label
+          className="block text-[0.875rem] font-[500] mb-[8px]"
+          style={{ color: "var(--foreground)" }}
+        >
           {label}
         </label>
       )}
       <div className="relative">
         <select
-          className={`w-[100%] bg-[#f5f5f5] dark:bg-[#333333] border border-[#e5e5e5] dark:border-[#444444] rounded-[0.75rem] px-[14px] py-[12px] text-[#1a1a1a] dark:text-[#ffffff] appearance-none focus:outline-none focus:ring-2 focus:ring-[#8b5cf6] focus:border-[#8b5cf6] pr-[40px] ${
+          className={`w-[100%] rounded-[0.75rem] px-[14px] py-[12px] appearance-none focus:outline-none focus:ring-2 focus:ring-[var(--primary-color)] pr-[40px] ${
             error ? "border-red-500" : ""
           } ${className}`}
+          style={{
+            backgroundColor: "var(--search-background)",
+            color: "var(--foreground)",
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--border-color)",
+          }}
           {...props}
         >
           {options.map((option) => (
@@ -53,7 +63,7 @@ const Select: React.FC<SelectProps> = ({
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-[#1a1a1a] dark:text-[#ffffff]"
+            style={{ color: "var(--foreground)" }}
           >
             <path d="M19 9l-7 7-7-7"></path>
           </svg>

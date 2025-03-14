@@ -115,9 +115,11 @@ export const mockUser: User = {
   id: "1",
   address: "0x1234...5678",
   username: "数字藏家",
+  balance: 1000,
   avatar: "/images/avatar.jpg",
   ownedNFTs: ["1", "3", "5"],
   rentedNFTs: ["2", "4"],
+  favoriteNFTs: ["2", "6"],
 };
 
 export const getRecommendedNFTs = (): NFT[] => {
@@ -138,4 +140,8 @@ export const getNFTById = (id: string): NFT | undefined => {
 
 export const getRentalNFTs = (): NFT[] => {
   return mockNFTs.filter((nft) => nft.isForRent);
+};
+
+export const getFavoriteNFTs = (): NFT[] => {
+  return mockNFTs.filter((nft) => mockUser.favoriteNFTs.includes(nft.id));
 };

@@ -109,17 +109,18 @@ export default function ProfilePage() {
                 >
                   {mockUser.username}
                 </h2>
+
                 <p
-                  className="text-[0.875rem] mt-[4px]"
+                  className="text-[0.75rem] mt-[4px]"
                   style={{ color: "var(--tab-inactive-color)" }}
                 >
-                  ID: {mockUser.id}
+                  钱包地址:{mockUser.address}
                 </p>
                 <p
                   className="text-[0.75rem] mt-[4px]"
                   style={{ color: "var(--tab-inactive-color)" }}
                 >
-                  {mockUser.address}
+                  余额:{mockUser.balance}
                 </p>
               </div>
             </div>
@@ -132,7 +133,7 @@ export default function ProfilePage() {
             style={{ backgroundColor: "var(--card-background)" }}
           >
             <div
-              className="grid grid-cols-2"
+              className="grid grid-cols-3"
               style={{
                 borderWidth: "0 0 0 0",
                 borderStyle: "solid",
@@ -163,6 +164,11 @@ export default function ProfilePage() {
               </div>
               <div
                 className="p-[16px] text-center cursor-pointer"
+                style={{
+                  borderWidth: "0 1px 0 0",
+                  borderStyle: "solid",
+                  borderColor: "var(--border-color)",
+                }}
                 onClick={() => router.push("/inventory?tab=1")}
               >
                 <div
@@ -178,17 +184,23 @@ export default function ProfilePage() {
                   {t("profile.rented")}
                 </div>
               </div>
-              {/* <div
-                className="p-[16px] text-center cursor-pointer active:bg-[#f3f4f6] dark:active:bg-[#333333]"
-                onClick={() => alert("收藏功能")}
+              <div
+                className="p-[16px] text-center cursor-pointer"
+                onClick={() => router.push("/inventory?tab=2")}
               >
-                <div className="text-[1.125rem] font-[700] text-[#8b5cf6]">
-                  0
+                <div
+                  className="text-[1.125rem] font-[700]"
+                  style={{ color: "var(--primary-color)" }}
+                >
+                  {mockUser.favoriteNFTs.length}
                 </div>
-                <div className="text-[0.75rem] text-[#6b7280] mt-[4px]">
-                  {t('profile.favorites')}
+                <div
+                  className="text-[0.75rem] mt-[4px]"
+                  style={{ color: "var(--tab-inactive-color)" }}
+                >
+                  {t("profile.favorites")}
                 </div>
-              </div> */}
+              </div>
             </div>
           </Card>
         </div>

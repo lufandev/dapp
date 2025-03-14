@@ -11,7 +11,7 @@ import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
 import { getNFTById } from "@/data/mockData";
 import { mockUser } from "@/data/mockData";
-import { FaArrowLeft, FaShareAlt } from "react-icons/fa";
+import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 
 // 支付币种选项
@@ -34,6 +34,23 @@ export default function NFTDetailPage() {
 
   // 检查NFT是否属于当前用户
   const isOwnedByUser = mockUser.ownedNFTs.includes(id);
+
+  // 检查NFT是否已收藏
+  const [isFavorite, setIsFavorite] = useState(
+    mockUser.favoriteNFTs.includes(id)
+  );
+
+  // 处理收藏/取消收藏
+  const handleToggleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    // 在实际应用中，这里应该调用API来更新用户的收藏列表
+    // 这里仅做前端状态更新
+    if (!isFavorite) {
+      alert(t("nft.addedToFavorites"));
+    } else {
+      alert(t("nft.removedFromFavorites"));
+    }
+  };
 
   // 出售弹框状态
   const [sellModalOpen, setSellModalOpen] = useState(false);
@@ -121,9 +138,13 @@ export default function NFTDetailPage() {
             </button>
             <button
               className="w-[40px] h-[40px] rounded-[9999px] bg-[rgba(0,0,0,0.5)] text-[#ffffff] flex items-center justify-center"
-              onClick={() => alert(t("nft.share"))}
+              onClick={handleToggleFavorite}
             >
-              <FaShareAlt />
+              {isFavorite ? (
+                <FaHeart className="text-[#ff4d4f]" />
+              ) : (
+                <FaRegHeart />
+              )}
             </button>
           </div>
           {nft.rarity && (
@@ -307,7 +328,10 @@ export default function NFTDetailPage() {
         >
           <div className="p-[16px]">
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("sell.price")}
               </label>
               <Input
@@ -318,7 +342,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("sell.currency")}
               </label>
               <Select
@@ -330,7 +357,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[24px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("sell.address")}
               </label>
               <Input
@@ -362,7 +392,10 @@ export default function NFTDetailPage() {
         >
           <div className="p-[16px]">
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("rent.price")}
               </label>
               <Input
@@ -373,7 +406,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("rent.deposit")}
               </label>
               <Input
@@ -384,7 +420,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("rent.duration")}
               </label>
               <Input
@@ -395,7 +434,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[16px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("rent.currency")}
               </label>
               <Select
@@ -407,7 +449,10 @@ export default function NFTDetailPage() {
               />
             </div>
             <div className="mb-[24px]">
-              <label className="block text-[0.875rem] text-[#6b7280] mb-[8px]">
+              <label
+                className="block text-[0.875rem] mb-[8px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
                 {t("rent.address")}
               </label>
               <Input

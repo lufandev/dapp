@@ -1,22 +1,25 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import TabView from "@/components/ui/TabView";
 import NFTCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
-import { mockNFTs } from "@/data/mockData";
+import { mockNFTs, getFavoriteNFTs } from "@/data/mockData";
 import { mockUser } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
 
 export default function InventoryPage() {
   const { t } = useLocale();
+  const router = useRouter();
   const ownedNFTs = mockNFTs.filter((nft) =>
     mockUser.ownedNFTs.includes(nft.id)
   );
   const rentedNFTs = mockNFTs.filter((nft) =>
     mockUser.rentedNFTs.includes(nft.id)
   );
+  const favoriteNFTs = getFavoriteNFTs();
 
   const renderNFTGrid = (nfts: typeof mockNFTs) => {
     return (
@@ -125,6 +128,30 @@ export default function InventoryPage() {
                   onClick={() => alert(t("inventory.goRent"))}
                 >
                   {t("inventory.goRent")}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      label: t("inventory.favorites"),
+      content: (
+        <div>
+          <div className="mb-6 flex justify-between items-center">
+            <div className="text-sm text-gray-500">
+              {t("inventory.total", { count: favoriteNFTs.length })}
+            </div>
+          </div>
+          {favoriteNFTs.length > 0 ? (
+            renderNFTGrid(favoriteNFTs)
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              {t("inventory.noFavorites")}
+              <div className="mt-6">
+                <Button variant="primary" onClick={() => router.push("/")}>
+                  {t("inventory.browse")}
                 </Button>
               </div>
             </div>
