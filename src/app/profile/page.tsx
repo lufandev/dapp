@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
@@ -13,14 +13,79 @@ import {
   FaLanguage,
   FaMoon,
   FaSun,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useTheme } from "@/components/ThemeProvider";
+
+// 轮播图数据
+const bannerImages = [
+  {
+    id: 1,
+    src: "/images/image.png",
+    alt: "Value ID Banner",
+    link: "/nft/1",
+  },
+];
 
 export default function ProfilePage() {
   const router = useRouter();
   const { t, locale, setLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
+
+  // 轮播图状态
+  const [currentBanner, setCurrentBanner] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+
+  // 自动轮播
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // 处理轮播图滑动
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStart - touchEnd > 50) {
+      // 向左滑动
+      setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
+    }
+
+    if (touchStart - touchEnd < -50) {
+      // 向右滑动
+      setCurrentBanner((prev) =>
+        prev === 0 ? bannerImages.length - 1 : prev - 1
+      );
+    }
+  };
+
+  // 切换到下一张图片
+  const nextBanner = () => {
+    setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
+  };
+
+  // 切换到上一张图片
+  const prevBanner = () => {
+    setCurrentBanner((prev) =>
+      prev === 0 ? bannerImages.length - 1 : prev - 1
+    );
+  };
+
+  // 点击指示器切换图片
+  const goToBanner = (index: number) => {
+    setCurrentBanner(index);
+  };
 
   const handleLanguageChange = () => {
     // 切换语言
@@ -203,6 +268,80 @@ export default function ProfilePage() {
               </div>
             </div>
           </Card>
+        </div>
+
+        {/* 轮播图 */}
+        <div className="mb-[24px]">
+          <div
+            className="relative w-full h-[180px] rounded-[0.75rem] overflow-hidden"
+            style={{
+              boxShadow: "0 2px 4px var(--card-shadow)",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--border-color)",
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {bannerImages.map((banner, index) => (
+              <div
+                key={banner.id}
+                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
+                  index === currentBanner
+                    ? "opacity-100"
+                    : "opacity-0 pointer-events-none"
+                }`}
+                onClick={() => router.push(banner.link)}
+              >
+                <Image
+                  src={banner.src}
+                  alt={banner.alt}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            ))}
+
+            {/* 左右箭头 */}
+            <button
+              className="absolute left-[10px] top-1/2 transform -translate-y-1/2 w-[30px] h-[30px] rounded-full bg-[rgba(0,0,0,0.3)] text-white flex items-center justify-center z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                prevBanner();
+              }}
+            >
+              <FaChevronLeft size={14} />
+            </button>
+
+            <button
+              className="absolute right-[10px] top-1/2 transform -translate-y-1/2 w-[30px] h-[30px] rounded-full bg-[rgba(0,0,0,0.3)] text-white flex items-center justify-center z-10"
+              onClick={(e) => {
+                e.stopPropagation();
+                nextBanner();
+              }}
+            >
+              <FaChevronRight size={14} />
+            </button>
+
+            {/* 指示器 */}
+            <div className="absolute bottom-[10px] left-0 right-0 flex justify-center gap-[8px] z-10">
+              {bannerImages.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-[8px] h-[8px] rounded-full ${
+                    index === currentBanner
+                      ? "bg-white"
+                      : "bg-[rgba(255,255,255,0.5)]"
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToBanner(index);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
         </div>
 
         <div>
