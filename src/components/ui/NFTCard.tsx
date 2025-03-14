@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Card from "./Card";
+import { useLocale } from "@/components/LocaleProvider";
 
 interface NFTCardProps {
   id: string;
@@ -23,6 +24,7 @@ const NFTCard: React.FC<NFTCardProps> = ({
   rentalPrice,
 }) => {
   const router = useRouter();
+  const { t } = useLocale();
 
   const handleClick = () => {
     router.push(`/nft/${id}`);
@@ -31,7 +33,15 @@ const NFTCard: React.FC<NFTCardProps> = ({
   return (
     <Card
       onClick={handleClick}
-      className="overflow-hidden bg-[#252525] border-none mb-[16px]"
+      className="overflow-hidden mb-[16px] hover:shadow-md transition-shadow duration-200"
+      style={{
+        backgroundColor: "var(--card-background)",
+        boxShadow: "0 2px 4px var(--card-shadow)",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "var(--border-color)",
+        borderRadius: "0.75rem",
+      }}
     >
       <div className="relative w-[100%] aspect-square rounded-[0.5rem] overflow-hidden mb-[8px]">
         <Image src={image} alt={name} fill className="object-cover" />
@@ -41,14 +51,22 @@ const NFTCard: React.FC<NFTCardProps> = ({
           </div>
         )}
       </div>
-      <h3 className="font-[500] text-[0.875rem] truncate text-[#ffffff]">
+      <h3
+        className="font-[500] text-[0.875rem] truncate"
+        style={{ color: "var(--foreground)" }}
+      >
         {name}
       </h3>
       <div className="flex justify-between items-center mt-[4px]">
-        <div className="text-[#8b5cf6] font-[700]">¥{price.toFixed(2)}</div>
+        <div style={{ color: "var(--primary-color)", fontWeight: 700 }}>
+          ¥{price.toFixed(2)}
+        </div>
         {isRental && rentalPrice && (
-          <div className="text-[0.75rem] text-[#9ca3af]">
-            租赁: ¥{rentalPrice.toFixed(2)}/天
+          <div
+            className="text-[0.75rem]"
+            style={{ color: "var(--tab-inactive-color)" }}
+          >
+            {t("nft.rentalPrice", { price: rentalPrice.toFixed(2) })}
           </div>
         )}
       </div>

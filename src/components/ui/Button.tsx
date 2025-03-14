@@ -19,13 +19,10 @@ const Button: React.FC<ButtonProps> = ({
     "rounded-[0.75rem] font-[600] transition-all focus:outline-none shadow-sm";
 
   const variantClasses = {
-    primary:
-      "bg-[#8b5cf6] text-[#ffffff] active:opacity-[0.8] hover:bg-[#7c3aed]",
-    secondary:
-      "bg-[#10b981] text-[#ffffff] active:opacity-[0.8] hover:bg-[#059669]",
-    outline:
-      "bg-transparent border-2 border-[#8b5cf6] text-[#8b5cf6] active:bg-[rgba(139,92,246,0.1)] hover:bg-[rgba(139,92,246,0.05)]",
-    text: "bg-transparent text-[#8b5cf6] hover:bg-[rgba(139,92,246,0.1)]",
+    primary: "text-[#ffffff] active:opacity-[0.8]",
+    secondary: "text-[#ffffff] active:opacity-[0.8]",
+    outline: "bg-transparent border-2 active:bg-[rgba(139,92,246,0.1)]",
+    text: "bg-transparent hover:bg-[rgba(139,92,246,0.1)]",
   };
 
   const sizeClasses = {
@@ -38,8 +35,26 @@ const Button: React.FC<ButtonProps> = ({
 
   const buttonClasses = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${widthClass} ${className}`;
 
+  const buttonStyle = {
+    ...(variant === "primary" && {
+      backgroundColor: "var(--primary-color)",
+      color: "#ffffff",
+    }),
+    ...(variant === "secondary" && {
+      backgroundColor: "var(--secondary-color)",
+      color: "#ffffff",
+    }),
+    ...(variant === "outline" && {
+      borderColor: "var(--primary-color)",
+      color: "var(--primary-color)",
+    }),
+    ...(variant === "text" && {
+      color: "var(--primary-color)",
+    }),
+  };
+
   return (
-    <button className={buttonClasses} {...props}>
+    <button className={buttonClasses} style={buttonStyle} {...props}>
       {children}
     </button>
   );

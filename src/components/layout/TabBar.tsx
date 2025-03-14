@@ -35,15 +35,28 @@ const TabBar: React.FC = () => {
             onClick={() => handleTabClick(tab.path)}
           >
             <Icon
-              className={`text-[1.5rem] mb-[4px] ${
-                isActive ? "text-[#8b5cf6]" : "text-[#6b7280]"
-              }`}
+              className={`text-[1.5rem] mb-[4px]`}
+              style={{
+                color: isActive
+                  ? "var(--tab-active-color)"
+                  : "var(--tab-inactive-color)",
+              }}
             />
-            <span className={`${isActive ? "font-[600]" : "font-[400]"}`}>
+            <span
+              className={`${isActive ? "font-[600]" : "font-[400]"}`}
+              style={{
+                color: isActive
+                  ? "var(--tab-active-color)"
+                  : "var(--tab-inactive-color)",
+              }}
+            >
               {tab.name}
             </span>
             {isActive && (
-              <div className="absolute bottom-[70px] w-[6px] h-[6px] rounded-full bg-[#8b5cf6]"></div>
+              <div
+                className="absolute bottom-[70px] w-[6px] h-[6px] rounded-full"
+                style={{ backgroundColor: "var(--primary-color)" }}
+              ></div>
             )}
           </button>
         );

@@ -148,40 +148,44 @@ export default function NFTDetailPage() {
 
           <div className="mb-[24px]">
             <div
-              className="flex border-[#e5e5e5] dark:border-[#333333] mb-[16px]"
-              style={{ borderWidth: "0 0 1px 0", borderStyle: "solid" }}
+              className="flex mb-[16px]"
+              style={{
+                borderWidth: "0 0 1px 0",
+                borderStyle: "solid",
+                borderColor: "var(--border-color)",
+              }}
             >
               <button
-                className={`py-[12px] px-[16px] text-[0.875rem] font-[500] ${
-                  activeTab === "details" ? "text-[#8b5cf6]" : "text-[#6b7280]"
-                }`}
+                className={`py-[12px] px-[16px] text-[0.875rem] font-[500]`}
                 style={
                   activeTab === "details"
                     ? {
                         borderWidth: "0 0 2px 0",
                         borderStyle: "solid",
-                        borderColor: "#8b5cf6",
+                        borderColor: "var(--primary-color)",
+                        color: "var(--primary-color)",
                       }
-                    : {}
+                    : {
+                        color: "var(--tab-inactive-color)",
+                      }
                 }
                 onClick={() => setActiveTab("details")}
               >
                 {t("nft.details")}
               </button>
               <button
-                className={`py-[12px] px-[16px] text-[0.875rem] font-[500] ${
-                  activeTab === "attributes"
-                    ? "text-[#8b5cf6]"
-                    : "text-[#6b7280]"
-                }`}
+                className={`py-[12px] px-[16px] text-[0.875rem] font-[500]`}
                 style={
                   activeTab === "attributes"
                     ? {
                         borderWidth: "0 0 2px 0",
                         borderStyle: "solid",
-                        borderColor: "#8b5cf6",
+                        borderColor: "var(--primary-color)",
+                        color: "var(--primary-color)",
                       }
-                    : {}
+                    : {
+                        color: "var(--tab-inactive-color)",
+                      }
                 }
                 onClick={() => setActiveTab("attributes")}
               >
@@ -191,28 +195,51 @@ export default function NFTDetailPage() {
 
             {activeTab === "details" ? (
               <div>
-                <p className="text-[0.875rem] text-[#4b5563] mb-[16px]">
+                <p
+                  className="text-[0.875rem] mb-[16px]"
+                  style={{ color: "var(--foreground)" }}
+                >
                   {nft.description}
                 </p>
                 <div className="grid grid-cols-2 gap-[16px] text-[0.875rem]">
                   <div>
-                    <div className="text-[#6b7280]">{t("nft.createdAt")}</div>
-                    <div>{new Date(nft.createdAt).toLocaleDateString()}</div>
+                    <div style={{ color: "var(--tab-inactive-color)" }}>
+                      {t("nft.createdAt")}
+                    </div>
+                    <div style={{ color: "var(--foreground)" }}>
+                      {new Date(nft.createdAt).toLocaleDateString()}
+                    </div>
                   </div>
                   <div>
-                    <div className="text-[#6b7280]">{t("nft.owner")}</div>
-                    <div>{nft.owner}</div>
+                    <div style={{ color: "var(--tab-inactive-color)" }}>
+                      {t("nft.owner")}
+                    </div>
+                    <div style={{ color: "var(--foreground)" }}>
+                      {nft.owner}
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-[16px]">
                 {nft.attributes.map((attr, index) => (
-                  <Card key={index} className="p-[12px]">
-                    <div className="text-[0.75rem] text-[#6b7280]">
+                  <Card
+                    key={index}
+                    className="p-[12px]"
+                    style={{ backgroundColor: "var(--card-background)" }}
+                  >
+                    <div
+                      className="text-[0.75rem]"
+                      style={{ color: "var(--tab-inactive-color)" }}
+                    >
                       {attr.trait_type}
                     </div>
-                    <div className="font-[500]">{attr.value}</div>
+                    <div
+                      className="font-[500]"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {attr.value}
+                    </div>
                   </Card>
                 ))}
               </div>
@@ -221,8 +248,13 @@ export default function NFTDetailPage() {
         </div>
 
         <div
-          className="fixed bottom-[0px] left-[0px] right-[0px] p-[16px] bg-[#ffffff] dark:bg-[#1e1e1e] border-[#e5e5e5] dark:border-[#333333] flex gap-[8px]"
-          style={{ borderWidth: "1px 0 0 0", borderStyle: "solid" }}
+          className="fixed bottom-[0px] left-[0px] right-[0px] p-[16px] flex gap-[8px]"
+          style={{
+            borderWidth: "1px 0 0 0",
+            borderStyle: "solid",
+            borderColor: "var(--border-color)",
+            backgroundColor: "var(--card-background)",
+          }}
         >
           {isOwnedByUser ? (
             // 用户自己的NFT，显示出售和出租按钮

@@ -100,6 +100,7 @@ const locales: LocaleData = {
     "profile.helpCenter": "Help Center",
     "profile.settings": "Settings",
     "profile.language": "Language",
+    "profile.theme": "Theme",
     "profile.owned": "Owned",
     "profile.rented": "Rented",
     "profile.favorites": "Favorites",
@@ -107,6 +108,10 @@ const locales: LocaleData = {
     // Language Settings
     "language.english": "English",
     "language.chinese": "中文",
+
+    // Theme Settings
+    "theme.light": "Light",
+    "theme.dark": "Dark",
   },
   zh: {
     // Common
@@ -199,6 +204,7 @@ const locales: LocaleData = {
     "profile.helpCenter": "帮助中心",
     "profile.settings": "设置",
     "profile.language": "语言",
+    "profile.theme": "主题",
     "profile.owned": "持有",
     "profile.rented": "已租",
     "profile.favorites": "收藏",
@@ -206,6 +212,10 @@ const locales: LocaleData = {
     // Language Settings
     "language.english": "English",
     "language.chinese": "中文",
+
+    // Theme Settings
+    "theme.light": "浅色",
+    "theme.dark": "深色",
   },
 };
 

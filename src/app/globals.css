@@ -2,15 +2,34 @@
 @tailwind utilities;
 
 :root {
-  --primary-color: #8b5cf6;
+  --primary-color: #6d28d9;
   --secondary-color: #10b981;
-  --background: #1a1a1a;
-  --foreground: #ffffff;
-  --card-background: #252525;
-  --border-color: #333333;
+  --background: #f8f9fa;
+  --foreground: #1a1a1a;
+  --card-background: #ffffff;
+  --border-color: #e5e5e5;
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --error-color: #ef4444;
+  --tab-bar-background: #f0f2f5;
+  --tab-bar-border: #e2e8f0;
+  --tab-active-color: #6d28d9;
+  --tab-inactive-color: #64748b;
+  --card-shadow: rgba(0, 0, 0, 0.05);
+  --search-background: #edf2f7;
+}
+
+.dark {
+  --background: #121212;
+  --foreground: #f8f9fa;
+  --card-background: #1e1e1e;
+  --border-color: #333333;
+  --tab-bar-background: #1a1a1a;
+  --tab-bar-border: #2d3748;
+  --tab-active-color: #8b5cf6;
+  --tab-inactive-color: #9ca3af;
+  --card-shadow: rgba(0, 0, 0, 0.2);
+  --search-background: #2d3748;
 }
 
 @theme inline {
@@ -18,15 +37,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #121212;
-    --foreground: #f5f5f5;
-    --card-background: #1e1e1e;
-    --border-color: #333333;
-  }
 }
 
 /* 隐藏滚动条 */
@@ -38,8 +48,8 @@ html,
 body {
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
-  background-color: #1a1a1a;
-  color: #ffffff;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 body {
@@ -60,10 +70,11 @@ body {
   }
 
   .ios-tab-bar {
-    @apply fixed bottom-[0px] left-[0px] right-[0px] h-[83px] bg-[#252525] flex items-center justify-around pt-[8px] pb-[28px];
+    @apply fixed bottom-[0px] left-[0px] right-[0px] h-[83px] flex items-center justify-around pt-[8px] pb-[28px];
+    background-color: var(--tab-bar-background);
     border-width: 1px 0 0 0;
     border-style: solid;
-    border-color: #333333;
+    border-color: var(--tab-bar-border);
     z-index: 50;
   }
 
@@ -72,15 +83,16 @@ body {
   }
 
   .ios-tab-item-active {
-    @apply text-[#8b5cf6];
+    color: var(--tab-active-color);
   }
 
   .ios-tab-item-inactive {
-    @apply text-[#6b7280];
+    color: var(--tab-inactive-color);
   }
 
   .ios-screen {
-    @apply w-screen mx-auto h-screen overflow-hidden relative bg-[#1a1a1a] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border-[8px] border-[#000000];
+    @apply w-screen mx-auto h-screen overflow-hidden relative shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)] border-[8px] border-[#000000];
+    background-color: var(--background);
   }
 
   .ios-content {
@@ -89,18 +101,29 @@ body {
   }
 
   .card {
-    @apply bg-[#ffffff] dark:bg-[#1e1e1e] rounded-[0.75rem] shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] border border-[#e5e5e5] dark:border-[#333333] p-[16px];
+    @apply rounded-[0.75rem] border p-[16px];
+    background-color: var(--card-background);
+    border-color: var(--border-color);
+    box-shadow: 0 1px 3px var(--card-shadow);
   }
 
   .btn-primary {
-    @apply bg-[#3b82f6] text-[#ffffff] font-[500] py-[12px] px-[16px] rounded-[0.5rem] active:opacity-[0.8];
+    @apply text-[#ffffff] font-[500] py-[12px] px-[16px] rounded-[0.5rem] active:opacity-[0.8];
+    background-color: var(--primary-color);
   }
 
   .btn-secondary {
-    @apply bg-[#ffffff] dark:bg-[#1e1e1e] text-[#3b82f6] border border-[#3b82f6] font-[500] py-[12px] px-[16px] rounded-[0.5rem] active:opacity-[0.8];
+    @apply font-[500] py-[12px] px-[16px] rounded-[0.5rem] active:opacity-[0.8] border;
+    background-color: var(--card-background);
+    color: var(--primary-color);
+    border-color: var(--primary-color);
   }
 
   .input {
-    @apply w-[100%] border border-[#e5e5e5] dark:border-[#333333] rounded-[0.5rem] px-[16px] py-[12px] bg-[#ffffff] dark:bg-[#1e1e1e] focus:outline-none focus:ring-[2px] focus:ring-[#3b82f6];
+    @apply w-[100%] border rounded-[0.5rem] px-[16px] py-[12px] focus:outline-none focus:ring-[2px];
+    background-color: var(--card-background);
+    color: var(--foreground);
+    border-color: var(--border-color);
+    focus-ring-color: var(--primary-color);
   }
 }
