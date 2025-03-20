@@ -27,15 +27,18 @@ export default function NFTDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const nft = getNFTById(id);
+  const valueId = getNFTById(id);
   const [activeTab, setActiveTab] = useState<"details" | "attributes">(
     "details"
   );
 
-  // 检查NFT是否属于当前用户
+  // 检查ID是否属于当前用户
   const isOwnedByUser = mockUser.ownedNFTs.includes(id);
 
-  // 检查NFT是否已收藏
+  // 检查是否是租赁的ID
+  const isRentedByUser = mockUser.rentedNFTs.includes(id);
+
+  // 检查ID是否已收藏
   const [isFavorite, setIsFavorite] = useState(
     mockUser.favoriteNFTs.includes(id)
   );
@@ -92,7 +95,7 @@ export default function NFTDetailPage() {
     setRentModalOpen(false);
   };
 
-  if (!nft) {
+  if (!valueId) {
     return (
       <MobileLayout showTabBar={false}>
         <div className="p-[16px]">
@@ -124,11 +127,24 @@ export default function NFTDetailPage() {
     label: t(option.label),
   }));
 
+  // 确定当前ID的显示模式
+  const displayMode =
+    isOwnedByUser || isRentedByUser
+      ? "inventory"
+      : valueId.isForRent
+      ? "rental"
+      : "sale";
+
   return (
     <MobileLayout showTabBar={false}>
       <div>
         <div className="relative w-[100%] aspect-square">
-          <Image src={nft.image} alt={nft.name} fill className="object-cover" />
+          <Image
+            src={valueId.image}
+            alt={valueId.name}
+            fill
+            className="object-cover"
+          />
           <div className="absolute top-[16px] left-[16px] right-[16px] flex justify-between">
             <button
               className="w-[40px] h-[40px] rounded-[9999px] bg-[rgba(0,0,0,0.5)] text-[#ffffff] flex items-center justify-center"
@@ -147,24 +163,39 @@ export default function NFTDetailPage() {
               )}
             </button>
           </div>
-          {nft.rarity && (
+          {valueId.rarity && (
             <div className="absolute bottom-[16px] right-[16px] bg-[rgba(0,0,0,0.7)] text-[#ffffff] text-[0.75rem] px-[12px] py-[4px] rounded-[9999px]">
-              {nft.rarity}
+              {valueId.rarity}
             </div>
           )}
         </div>
 
-        <div className="p-[16px]">
-          <h1 className="text-[1.25rem] font-[700] mb-[8px]">{nft.name}</h1>
-          <div className="flex justify-between items-center mb-[16px]">
-            <div className="text-[1.5rem] font-[700] text-[#8b5cf6]">
-              ¥{nft.price.toFixed(2)}
-            </div>
-            {nft.isForRent && nft.rentalPrice && (
-              <div className="text-[0.875rem] text-[#6b7280]">
-                {t("nft.rentalPrice", { price: nft.rentalPrice.toFixed(2) })}
+        <div className="p-[16px] pb-[100px]">
+          <div className="mb-[16px]">
+            <h1
+              className="text-[1.5rem] font-[700]"
+              style={{ color: "var(--foreground)" }}
+            >
+              {valueId.name}
+            </h1>
+            <div className="flex justify-between items-center mt-[8px]">
+              <div
+                className="text-[0.875rem]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
+                {valueId.indexNumber}
               </div>
-            )}
+              {displayMode !== "inventory" && (
+                <div
+                  className="text-[1.125rem] font-[700]"
+                  style={{ color: "var(--primary-color)" }}
+                >
+                  {displayMode === "rental" && valueId.rentalPrice
+                    ? `¥${valueId.rentalPrice.toFixed(2)}`
+                    : `¥${valueId.price.toFixed(2)}`}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="mb-[24px]">
@@ -220,7 +251,7 @@ export default function NFTDetailPage() {
                   className="text-[0.875rem] mb-[16px]"
                   style={{ color: "var(--foreground)" }}
                 >
-                  {nft.description}
+                  {valueId.description}
                 </p>
                 <div className="grid grid-cols-2 gap-[16px] text-[0.875rem]">
                   <div>
@@ -228,7 +259,7 @@ export default function NFTDetailPage() {
                       {t("nft.createdAt")}
                     </div>
                     <div style={{ color: "var(--foreground)" }}>
-                      {new Date(nft.createdAt).toLocaleDateString()}
+                      {new Date(valueId.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                   <div>
@@ -236,14 +267,46 @@ export default function NFTDetailPage() {
                       {t("nft.owner")}
                     </div>
                     <div style={{ color: "var(--foreground)" }}>
-                      {nft.owner}
+                      {valueId.owner}
                     </div>
                   </div>
+
+                  {displayMode !== "inventory" && (
+                    <>
+                      <div>
+                        <div style={{ color: "var(--tab-inactive-color)" }}>
+                          {t("nft.paymentCurrency")}
+                        </div>
+                        <div style={{ color: "var(--foreground)" }}>
+                          {valueId.paymentCurrency || "ETH"}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ color: "var(--tab-inactive-color)" }}>
+                          {t("nft.paymentAddress")}
+                        </div>
+                        <div style={{ color: "var(--foreground)" }}>
+                          {valueId.paymentAddress}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {displayMode === "rental" && valueId.rentalPeriod && (
+                    <div>
+                      <div style={{ color: "var(--tab-inactive-color)" }}>
+                        {t("nft.rentalPeriod")}
+                      </div>
+                      <div style={{ color: "var(--foreground)" }}>
+                        {valueId.rentalPeriod} {t("nft.days")}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-[16px]">
-                {nft.attributes.map((attr, index) => (
+                {valueId.attributes.map((attr, index) => (
                   <Card
                     key={index}
                     className="p-[12px]"
@@ -278,7 +341,7 @@ export default function NFTDetailPage() {
           }}
         >
           {isOwnedByUser ? (
-            // 用户自己的NFT，显示出售和出租按钮
+            // 用户自己的ID，显示出售和出租按钮
             <>
               <Button
                 variant="primary"
@@ -295,10 +358,19 @@ export default function NFTDetailPage() {
                 {t("nft.rentOut")}
               </Button>
             </>
+          ) : isRentedByUser ? (
+            // 用户租赁的ID，显示归还按钮
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => alert(t("nft.returnRental"))}
+            >
+              {t("nft.returnRental")}
+            </Button>
           ) : (
-            // 不是用户自己的NFT，显示购买和租赁按钮
+            // 不是用户自己的ID，显示购买和租赁按钮
             <>
-              {nft.isForSale && (
+              {valueId.isForSale && (
                 <Button
                   variant="primary"
                   fullWidth
@@ -307,7 +379,7 @@ export default function NFTDetailPage() {
                   {t("nft.buyNow")}
                 </Button>
               )}
-              {nft.isForRent && (
+              {valueId.isForRent && (
                 <Button
                   variant="outline"
                   fullWidth

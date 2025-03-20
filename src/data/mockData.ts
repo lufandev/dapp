@@ -1,13 +1,16 @@
-import { NFT, User } from "../types";
+import { ValueID, User } from "../types";
 
-export const mockNFTs: NFT[] = [
+export const mockValueIDs: ValueID[] = [
   {
     id: "1",
-    name: "数字藏品 #001",
-    description: "这是一个独特的数字藏品，具有收藏价值和实用性。",
+    name: "Value ID #001",
+    description: "这是一个独特的数字身份，具有收藏价值和实用性。",
     image: "/images/nft1.jpg",
+    indexNumber: "VID-001-2023",
     price: 1299.99,
     owner: "0x1234...5678",
+    paymentAddress: "0x9876...5432",
+    paymentCurrency: "ETH",
     rarity: "rare",
     isForSale: true,
     isForRent: true,
@@ -22,28 +25,34 @@ export const mockNFTs: NFT[] = [
   },
   {
     id: "2",
-    name: "限量版角色 #042",
-    description: "游戏中的限量版角色，拥有独特技能和外观。",
+    name: "Value ID #042",
+    description: "限量版数字身份，拥有独特特权和外观。",
     image: "/images/nft2.jpg",
+    indexNumber: "VID-042-2023",
     price: 2499.99,
     owner: "0xabcd...efgh",
+    paymentAddress: "0xabcd...efgh",
+    paymentCurrency: "USDT",
     rarity: "epic",
     isForSale: true,
     isForRent: true,
     createdAt: "2023-02-20T14:15:00Z",
     attributes: [
-      { trait_type: "类型", value: "角色" },
-      { trait_type: "技能", value: "隐身" },
+      { trait_type: "类型", value: "身份" },
+      { trait_type: "特权", value: "高级访问" },
       { trait_type: "稀有度", value: "史诗" },
     ],
   },
   {
     id: "3",
-    name: "虚拟地块 #128",
-    description: "元宇宙中的虚拟地块，可用于建造和开发。",
+    name: "Value ID #128",
+    description: "元宇宙中的高级身份，可用于特殊场景和活动。",
     image: "/images/nft1.jpg",
+    indexNumber: "VID-128-2023",
     price: 5999.99,
     owner: "0x9876...5432",
+    paymentAddress: "0x9876...5432",
+    paymentCurrency: "BTC",
     rarity: "legendary",
     isForSale: true,
     isForRent: true,
@@ -51,35 +60,41 @@ export const mockNFTs: NFT[] = [
     rentalPeriod: 30,
     createdAt: "2023-03-05T10:45:00Z",
     attributes: [
-      { trait_type: "面积", value: "500平方米" },
-      { trait_type: "位置", value: "中心区" },
+      { trait_type: "等级", value: "传奇" },
+      { trait_type: "权限", value: "全域" },
       { trait_type: "稀有度", value: "传奇" },
     ],
   },
   {
     id: "4",
-    name: "数字艺术品 #076",
-    description: "由知名数字艺术家创作的限量版艺术品。",
+    name: "Value ID #076",
+    description: "由知名设计师创作的限量版数字身份。",
     image: "/images/nft4.jpg",
+    indexNumber: "VID-076-2023",
     price: 899.99,
     owner: "0xefgh...ijkl",
+    paymentAddress: "0xefgh...ijkl",
+    paymentCurrency: "ETH",
     rarity: "uncommon",
     isForSale: true,
     isForRent: true,
     createdAt: "2023-04-12T16:20:00Z",
     attributes: [
-      { trait_type: "艺术家", value: "数字大师" },
+      { trait_type: "设计师", value: "数字大师" },
       { trait_type: "创作年份", value: "2023" },
       { trait_type: "稀有度", value: "非凡" },
     ],
   },
   {
     id: "5",
-    name: "游戏道具 #215",
-    description: "游戏中的稀有道具，提供独特能力。",
+    name: "Value ID #215",
+    description: "基础版数字身份，提供基本功能和权限。",
     image: "/images/nft5.jpg",
+    indexNumber: "VID-215-2023",
     price: 499.99,
     owner: "0xmnop...qrst",
+    paymentAddress: "0xmnop...qrst",
+    paymentCurrency: "USDT",
     rarity: "common",
     isForSale: true,
     isForRent: true,
@@ -87,29 +102,35 @@ export const mockNFTs: NFT[] = [
     rentalPeriod: 14,
     createdAt: "2023-05-25T09:10:00Z",
     attributes: [
-      { trait_type: "类型", value: "武器" },
-      { trait_type: "攻击力", value: "85" },
+      { trait_type: "类型", value: "基础" },
+      { trait_type: "权限等级", value: "1" },
       { trait_type: "稀有度", value: "普通" },
     ],
   },
   {
     id: "6",
-    name: "收藏卡片 #033",
-    description: "数字收藏卡片，限量发行。",
+    name: "Value ID #033",
+    description: "数字身份卡，限量发行。",
     image: "/images/nft2.jpg",
+    indexNumber: "VID-033-2023",
     price: 799.99,
     owner: "0xuvwx...yz12",
+    paymentAddress: "0xuvwx...yz12",
+    paymentCurrency: "ETH",
     rarity: "rare",
     isForSale: true,
     isForRent: true,
     createdAt: "2023-06-18T11:30:00Z",
     attributes: [
-      { trait_type: "系列", value: "英雄" },
+      { trait_type: "系列", value: "先锋" },
       { trait_type: "编号", value: "33/100" },
       { trait_type: "稀有度", value: "稀有" },
     ],
   },
 ];
+
+// 为了保持兼容性
+export const mockNFTs = mockValueIDs;
 
 export const mockUser: User = {
   id: "1",
@@ -122,26 +143,28 @@ export const mockUser: User = {
   favoriteNFTs: ["2", "6"],
 };
 
-export const getRecommendedNFTs = (): NFT[] => {
-  return mockNFTs.filter(
-    (nft) => nft.rarity === "epic" || nft.rarity === "legendary"
+export const getRecommendedNFTs = (): ValueID[] => {
+  return mockValueIDs.filter(
+    (id) => id.rarity === "epic" || id.rarity === "legendary"
   );
 };
 
-export const getLatestNFTs = (): NFT[] => {
-  return [...mockNFTs].sort(
+export const getLatestNFTs = (): ValueID[] => {
+  return [...mockValueIDs].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 };
 
-export const getNFTById = (id: string): NFT | undefined => {
-  return mockNFTs.find((nft) => nft.id === id);
+export const getNFTById = (id: string): ValueID | undefined => {
+  return mockValueIDs.find((valueId) => valueId.id === id);
 };
 
-export const getRentalNFTs = (): NFT[] => {
-  return mockNFTs.filter((nft) => nft.isForRent);
+export const getRentalNFTs = (): ValueID[] => {
+  return mockValueIDs.filter((valueId) => valueId.isForRent);
 };
 
-export const getFavoriteNFTs = (): NFT[] => {
-  return mockNFTs.filter((nft) => mockUser.favoriteNFTs.includes(nft.id));
+export const getFavoriteNFTs = (): ValueID[] => {
+  return mockValueIDs.filter((valueId) =>
+    mockUser.favoriteNFTs.includes(valueId.id)
+  );
 };

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/ui/SearchBar";
-import NFTCard from "@/components/ui/NFTCard";
+import ValueIDCard from "@/components/ui/NFTCard";
 import { getRentalNFTs } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -21,26 +21,29 @@ export default function RentalPage() {
     }
 
     const results = rentalNFTs.filter(
-      (nft) =>
-        nft.name.toLowerCase().includes(query.toLowerCase()) ||
-        nft.description.toLowerCase().includes(query.toLowerCase())
+      (valueId) =>
+        valueId.name.toLowerCase().includes(query.toLowerCase()) ||
+        valueId.description.toLowerCase().includes(query.toLowerCase())
     );
     setSearchResults(results);
   };
 
-  const renderNFTGrid = (nfts: ReturnType<typeof getRentalNFTs>) => {
+  const renderValueIDGrid = (valueIDs: ReturnType<typeof getRentalNFTs>) => {
     return (
       <div className="grid grid-cols-2 gap-[16px] mb-[83px]">
-        {nfts.map((nft) => (
-          <NFTCard
-            key={nft.id}
-            id={nft.id}
-            name={nft.name}
-            image={nft.image}
-            price={nft.price}
-            rarity={nft.rarity}
+        {valueIDs.map((valueId) => (
+          <ValueIDCard
+            key={valueId.id}
+            id={valueId.id}
+            name={valueId.name}
+            image={valueId.image}
+            indexNumber={valueId.indexNumber}
+            price={valueId.price}
+            rarity={valueId.rarity}
             isRental={true}
-            rentalPrice={nft.rentalPrice}
+            rentalPrice={valueId.rentalPrice}
+            paymentCurrency={valueId.paymentCurrency}
+            displayMode="rental"
           />
         ))}
       </div>
@@ -75,7 +78,7 @@ export default function RentalPage() {
               </button>
             </div>
             {searchResults.length > 0 ? (
-              renderNFTGrid(searchResults)
+              renderValueIDGrid(searchResults)
             ) : (
               <div className="text-center py-8 text-gray-500">
                 {t("common.noResults")}
@@ -83,7 +86,7 @@ export default function RentalPage() {
             )}
           </div>
         ) : (
-          renderNFTGrid(rentalNFTs)
+          renderValueIDGrid(rentalNFTs)
         )}
       </div>
     </MobileLayout>

@@ -4,24 +4,30 @@ import { useRouter } from "next/navigation";
 import Card from "./Card";
 import { useLocale } from "@/components/LocaleProvider";
 
-interface NFTCardProps {
+interface ValueIDCardProps {
   id: string;
   name: string;
   image: string;
+  indexNumber: string;
   price: number;
   rarity?: string;
   isRental?: boolean;
   rentalPrice?: number;
+  paymentCurrency?: string;
+  displayMode?: "inventory" | "sale" | "rental"; // 显示模式：库存/出售/租赁
 }
 
-const NFTCard: React.FC<NFTCardProps> = ({
+const ValueIDCard: React.FC<ValueIDCardProps> = ({
   id,
   name,
   image,
+  indexNumber,
   price,
   rarity,
   isRental = false,
   rentalPrice,
+  paymentCurrency,
+  displayMode = "sale", // 默认为出售模式
 }) => {
   const router = useRouter();
   const { t } = useLocale();
@@ -57,21 +63,53 @@ const NFTCard: React.FC<NFTCardProps> = ({
       >
         {name}
       </h3>
-      <div className="flex justify-between items-center mt-[4px]">
-        <div style={{ color: "var(--primary-color)", fontWeight: 700 }}>
-          ¥{price.toFixed(2)}
-        </div>
-        {isRental && rentalPrice && (
+      <div
+        className="text-[0.75rem] mb-[4px]"
+        style={{ color: "var(--tab-inactive-color)" }}
+      >
+        {indexNumber}
+      </div>
+      <div className="flex justify-between items-center">
+        {displayMode === "inventory" ? (
+          // 库存模式下不显示价格，只显示ID信息
           <div
             className="text-[0.75rem]"
             style={{ color: "var(--tab-inactive-color)" }}
           >
-            {t("nft.rentalPrice", { price: rentalPrice.toFixed(2) })}
+            {t("id.owned")}
           </div>
+        ) : (
+          // 出售或租赁模式
+          <>
+            <div style={{ color: "var(--primary-color)", fontWeight: 700 }}>
+              {displayMode === "rental" && isRental && rentalPrice
+                ? `¥${rentalPrice.toFixed(2)}`
+                : `¥${price.toFixed(2)}`}
+            </div>
+            {displayMode === "rental" && isRental ? (
+              <div
+                className="text-[0.75rem]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
+                {t("id.rentalPrice")}
+              </div>
+            ) : displayMode === "sale" ? (
+              <div
+                className="text-[0.75rem]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
+                {paymentCurrency || "ETH"}
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </Card>
   );
 };
 
-export default NFTCard;
+// 为了保持兼容性
+const NFTCard = ValueIDCard;
+
+export default ValueIDCard;
+export { NFTCard };

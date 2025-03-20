@@ -4,17 +4,21 @@ import React, { useState } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/ui/SearchBar";
 import TabView from "@/components/ui/TabView";
-import NFTCard from "@/components/ui/NFTCard";
+import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
-import { mockNFTs, getRecommendedNFTs, getLatestNFTs } from "@/data/mockData";
+import {
+  mockValueIDs,
+  getRecommendedNFTs,
+  getLatestNFTs,
+} from "@/data/mockData";
 import { FaWallet } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 
 export default function Home() {
   const { t } = useLocale();
-  const [searchResults, setSearchResults] = useState<typeof mockNFTs | null>(
-    null
-  );
+  const [searchResults, setSearchResults] = useState<
+    typeof mockValueIDs | null
+  >(null);
 
   const handleSearch = (query: string) => {
     if (!query.trim()) {
@@ -22,27 +26,30 @@ export default function Home() {
       return;
     }
 
-    const results = mockNFTs.filter(
-      (nft) =>
-        nft.name.toLowerCase().includes(query.toLowerCase()) ||
-        nft.description.toLowerCase().includes(query.toLowerCase())
+    const results = mockValueIDs.filter(
+      (valueId) =>
+        valueId.name.toLowerCase().includes(query.toLowerCase()) ||
+        valueId.description.toLowerCase().includes(query.toLowerCase())
     );
     setSearchResults(results);
   };
 
-  const renderNFTGrid = (nfts: typeof mockNFTs) => {
+  const renderValueIDGrid = (valueIDs: typeof mockValueIDs) => {
     return (
       <div className="grid grid-cols-2 gap-[16px] mb-[100px]">
-        {nfts.map((nft) => (
-          <NFTCard
-            key={nft.id}
-            id={nft.id}
-            name={nft.name}
-            image={nft.image}
-            price={nft.price}
-            rarity={nft.rarity}
-            isRental={nft.isForRent}
-            rentalPrice={nft.rentalPrice}
+        {valueIDs.map((valueId) => (
+          <ValueIDCard
+            key={valueId.id}
+            id={valueId.id}
+            name={valueId.name}
+            image={valueId.image}
+            indexNumber={valueId.indexNumber}
+            price={valueId.price}
+            rarity={valueId.rarity}
+            isRental={valueId.isForRent}
+            rentalPrice={valueId.rentalPrice}
+            paymentCurrency={valueId.paymentCurrency}
+            displayMode="sale"
           />
         ))}
       </div>
@@ -52,15 +59,15 @@ export default function Home() {
   const tabs = [
     {
       label: t("home.all"),
-      content: renderNFTGrid(mockNFTs),
+      content: renderValueIDGrid(mockValueIDs),
     },
     {
       label: t("home.recommended"),
-      content: renderNFTGrid(getRecommendedNFTs()),
+      content: renderValueIDGrid(getRecommendedNFTs()),
     },
     {
       label: t("home.latest"),
-      content: renderNFTGrid(getLatestNFTs()),
+      content: renderValueIDGrid(getLatestNFTs()),
     },
   ];
 
@@ -68,7 +75,7 @@ export default function Home() {
     <MobileLayout>
       <div className="p-[16px]">
         <div className="flex justify-between items-center mb-[16px]">
-          <h1 className="text-xl font-bold">{t("app.name")}</h1>
+          <h1 className="text-xl font-bold">Value ID</h1>
           <Button
             variant="outline"
             size="sm"
@@ -98,7 +105,7 @@ export default function Home() {
               </button>
             </div>
             {searchResults.length > 0 ? (
-              renderNFTGrid(searchResults)
+              renderValueIDGrid(searchResults)
             ) : (
               <div className="text-center py-8 text-gray-500">
                 {t("common.noResults")}

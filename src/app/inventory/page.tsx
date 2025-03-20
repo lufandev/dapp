@@ -4,36 +4,42 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import TabView from "@/components/ui/TabView";
-import NFTCard from "@/components/ui/NFTCard";
+import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
-import { mockNFTs, getFavoriteNFTs } from "@/data/mockData";
+import { mockValueIDs, getFavoriteNFTs } from "@/data/mockData";
 import { mockUser } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
 
 export default function InventoryPage() {
   const { t } = useLocale();
   const router = useRouter();
-  const ownedNFTs = mockNFTs.filter((nft) =>
-    mockUser.ownedNFTs.includes(nft.id)
+  const ownedValueIDs = mockValueIDs.filter((valueId) =>
+    mockUser.ownedNFTs.includes(valueId.id)
   );
-  const rentedNFTs = mockNFTs.filter((nft) =>
-    mockUser.rentedNFTs.includes(nft.id)
+  const rentedValueIDs = mockValueIDs.filter((valueId) =>
+    mockUser.rentedNFTs.includes(valueId.id)
   );
-  const favoriteNFTs = getFavoriteNFTs();
+  const favoriteValueIDs = getFavoriteNFTs();
 
-  const renderNFTGrid = (nfts: typeof mockNFTs) => {
+  const renderValueIDGrid = (
+    valueIDs: typeof mockValueIDs,
+    displayMode: "inventory" | "sale" | "rental" = "inventory"
+  ) => {
     return (
       <div className="grid grid-cols-2 gap-[16px] mb-[100px]">
-        {nfts.map((nft) => (
-          <NFTCard
-            key={nft.id}
-            id={nft.id}
-            name={nft.name}
-            image={nft.image}
-            price={nft.price}
-            rarity={nft.rarity}
-            isRental={nft.isForRent}
-            rentalPrice={nft.rentalPrice}
+        {valueIDs.map((valueId) => (
+          <ValueIDCard
+            key={valueId.id}
+            id={valueId.id}
+            name={valueId.name}
+            image={valueId.image}
+            indexNumber={valueId.indexNumber}
+            price={valueId.price}
+            rarity={valueId.rarity}
+            isRental={valueId.isForRent}
+            rentalPrice={valueId.rentalPrice}
+            paymentCurrency={valueId.paymentCurrency}
+            displayMode={displayMode}
           />
         ))}
       </div>
@@ -47,7 +53,7 @@ export default function InventoryPage() {
         <div>
           <div className="mb-6 flex justify-between items-center">
             <div className="text-sm text-gray-500">
-              {t("inventory.total", { count: ownedNFTs.length })}
+              {t("inventory.total", { count: ownedValueIDs.length })}
             </div>
             <div className="flex gap-3">
               {/* <Button
@@ -61,7 +67,7 @@ export default function InventoryPage() {
               </Button> */}
             </div>
           </div>
-          {ownedNFTs.length > 0 ? (
+          {ownedValueIDs.length > 0 ? (
             <>
               {/* <div className="flex gap-4 mb-6">
                 <Button
@@ -81,7 +87,7 @@ export default function InventoryPage() {
                   <span>{t("inventory.rent")}</span>
                 </Button>
               </div> */}
-              {renderNFTGrid(ownedNFTs)}
+              {renderValueIDGrid(ownedValueIDs, "inventory")}
             </>
           ) : (
             <div className="text-center py-8 text-gray-500">
@@ -105,7 +111,7 @@ export default function InventoryPage() {
         <div>
           <div className="mb-6 flex justify-between items-center">
             <div className="text-sm text-gray-500">
-              {t("inventory.total", { count: rentedNFTs.length })}
+              {t("inventory.total", { count: rentedValueIDs.length })}
             </div>
             {/* <Button
               variant="outline"
@@ -117,8 +123,8 @@ export default function InventoryPage() {
               <span>{t("inventory.filter")}</span>
             </Button> */}
           </div>
-          {rentedNFTs.length > 0 ? (
-            renderNFTGrid(rentedNFTs)
+          {rentedValueIDs.length > 0 ? (
+            renderValueIDGrid(rentedValueIDs, "inventory")
           ) : (
             <div className="text-center py-8 text-gray-500">
               {t("inventory.noRented")}
@@ -141,11 +147,11 @@ export default function InventoryPage() {
         <div>
           <div className="mb-6 flex justify-between items-center">
             <div className="text-sm text-gray-500">
-              {t("inventory.total", { count: favoriteNFTs.length })}
+              {t("inventory.total", { count: favoriteValueIDs.length })}
             </div>
           </div>
-          {favoriteNFTs.length > 0 ? (
-            renderNFTGrid(favoriteNFTs)
+          {favoriteValueIDs.length > 0 ? (
+            renderValueIDGrid(favoriteValueIDs, "inventory")
           ) : (
             <div className="text-center py-8 text-gray-500">
               {t("inventory.noFavorites")}
