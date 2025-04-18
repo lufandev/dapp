@@ -64,7 +64,7 @@ export default function FinancePage() {
               borderStyle: "solid",
               borderColor: "var(--border-color)",
             }}
-            onClick={() => alert("提现功能即将上线")}
+            onClick={() => router.push("/finance/withdraw")}
           >
             <div className="flex items-center">
               <div

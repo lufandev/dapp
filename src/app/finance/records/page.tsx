@@ -16,7 +16,10 @@ const transactions = [
     currency: "USDT",
     time: "2023-06-15T08:30:00Z",
     status: "completed", // pending, completed, failed
-    description: "充值",
+    description: {
+      en: "Deposit",
+      zh: "充值",
+    },
   },
   {
     id: "tx2",
@@ -25,7 +28,10 @@ const transactions = [
     currency: "USDT",
     time: "2023-06-10T14:15:00Z",
     status: "completed",
-    description: "购买 Value ID #038",
+    description: {
+      en: "Purchase Value ID #038",
+      zh: "购买 Value ID #038",
+    },
   },
   {
     id: "tx3",
@@ -34,7 +40,10 @@ const transactions = [
     currency: "USDT",
     time: "2023-06-05T10:45:00Z",
     status: "completed",
-    description: "提现",
+    description: {
+      en: "Withdraw",
+      zh: "提现",
+    },
   },
   {
     id: "tx4",
@@ -43,7 +52,10 @@ const transactions = [
     currency: "USDT",
     time: "2023-06-01T16:20:00Z",
     status: "completed",
-    description: "退款 Value ID #025",
+    description: {
+      en: "Refund Value ID #025",
+      zh: "退款 Value ID #025",
+    },
   },
   {
     id: "tx5",
@@ -52,7 +64,10 @@ const transactions = [
     currency: "USDT",
     time: "2023-05-28T09:10:00Z",
     status: "failed",
-    description: "提现失败",
+    description: {
+      en: "Withdraw Failed",
+      zh: "提现失败",
+    },
   },
 ];
 
@@ -168,8 +183,9 @@ export default function FinanceRecordsPage() {
                           className="text-[0.9rem] font-[600] mb-[4px]"
                           style={{ color: "var(--foreground)" }}
                         >
-                          {transaction.description ||
-                            transactionTypeText(transaction.type)}
+                          {typeof transaction.description === "object"
+                            ? transaction.description[locale]
+                            : transactionTypeText(transaction.type)}
                         </div>
                         <div
                           className="text-[0.75rem]"

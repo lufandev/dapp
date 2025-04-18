@@ -120,16 +120,6 @@ export default function ProfilePage() {
       onClick: () => alert(t("profile.platformAuth")),
     },
     {
-      icon: <FaShoppingCart style={{ color: "var(--primary-color)" }} />,
-      title: t("profile.buyOrders"),
-      onClick: () => router.push("/orders/buy"),
-    },
-    {
-      icon: <FaHandshake style={{ color: "var(--primary-color)" }} />,
-      title: t("profile.leaseOrders"),
-      onClick: () => router.push("/orders/lease"),
-    },
-    {
       icon: <FaShoppingBag style={{ color: "var(--primary-color)" }} />,
       title: t("profile.sellOrders"),
       onClick: () => router.push("/orders/sell"),
@@ -138,6 +128,16 @@ export default function ProfilePage() {
       icon: <FaExchangeAlt style={{ color: "var(--primary-color)" }} />,
       title: t("profile.rentalOrders"),
       onClick: () => router.push("/orders/rental"),
+    },
+    {
+      icon: <FaShoppingCart style={{ color: "var(--primary-color)" }} />,
+      title: t("profile.buyOrders"),
+      onClick: () => router.push("/orders/buy"),
+    },
+    {
+      icon: <FaHandshake style={{ color: "var(--primary-color)" }} />,
+      title: t("profile.leaseOrders"),
+      onClick: () => router.push("/orders/lease"),
     },
     {
       icon: <FaLanguage style={{ color: "var(--primary-color)" }} />,
