@@ -9,25 +9,96 @@ import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
-// 假设的租赁订单详情数据
+// 我的租赁订单详情数据
 const getLeaseOrderData = (id: string) => {
-  // 这里可以替换为从API获取数据
-  return {
-    id: id,
-    valueId: "45",
-    imageUrl: "/images/nft4.jpg",
-    name: "Value ID #045",
-    rentalPrice: 199.99,
-    deposit: 1500,
-    duration: 20,
-    currency: "BTC",
-    status: "active", // active, completed, canceled
-    startDate: "2023-05-10T14:15:00Z",
-    endDate: "2023-05-30T14:15:00Z",
-    renter: "0x2468...1357",
-    owner: "0x1234...5678",
-    txHash: "0xabcd...ef01",
+  // 根据订单ID返回对应的订单数据
+  const orders: {
+    [key: string]: {
+      id: string;
+      valueId: string;
+      imageUrl: string;
+      name: string;
+      rentalPrice: number;
+      deposit: number;
+      duration: number;
+      currency: string;
+      status: string;
+      createTime: string;
+      startDate: string | null;
+      endDate: string | null;
+      owner: string;
+      txHash: string;
+      canWithdraw?: boolean;
+    };
+  } = {
+    lo1: {
+      id: "lo1",
+      valueId: "1",
+      imageUrl: "/images/nft1.jpg",
+      name: "Value ID #001",
+      rentalPrice: 99.99,
+      deposit: 500,
+      duration: 7,
+      currency: "USDT",
+      status: "unpaid", // 未付款状态
+      createTime: "2023-10-15T08:30:00Z",
+      startDate: null,
+      endDate: null,
+      owner: "0x8f24...7ab2",
+      txHash: "0xabcd...ef01",
+    },
+    lo2: {
+      id: "lo2",
+      valueId: "3",
+      imageUrl: "/images/nft2.jpg",
+      name: "Value ID #128",
+      rentalPrice: 299.99,
+      deposit: 2000,
+      duration: 30,
+      currency: "USDT",
+      status: "paid", // 已付款状态
+      createTime: "2023-09-01T14:15:00Z",
+      startDate: null,
+      endDate: null,
+      owner: "0x7e33...9cf1",
+      txHash: "0xbcde...fg12",
+    },
+    lo3: {
+      id: "lo3",
+      valueId: "5",
+      imageUrl: "/images/nft3.jpg",
+      name: "Value ID #215",
+      rentalPrice: 49.99,
+      deposit: 200,
+      duration: 14,
+      currency: "USDT",
+      status: "active", // 进行中状态
+      createTime: "2023-11-10T10:45:00Z",
+      startDate: "2023-11-10T10:45:00Z",
+      endDate: "2023-11-24T10:45:00Z",
+      owner: "0x1a42...3d8e",
+      txHash: "0xcdef...gh23",
+    },
+    lo4: {
+      id: "lo4",
+      valueId: "7",
+      imageUrl: "/images/nft4.jpg",
+      name: "Value ID #376",
+      rentalPrice: 159.99,
+      deposit: 800,
+      duration: 21,
+      currency: "USDT",
+      status: "expired", // 已到期状态
+      createTime: "2023-08-05T12:30:00Z",
+      startDate: "2023-08-05T12:30:00Z",
+      endDate: "2023-08-26T12:30:00Z",
+      owner: "0x3b67...2ef4",
+      txHash: "0xdefg...hi34",
+      canWithdraw: true, // 可以提取押金
+    },
   };
+
+  return orders[id] || orders.lo1; // 如果找不到对应的订单，返回默认订单
 };
 
 export default function LeaseOrderDetailPage({
@@ -43,62 +114,58 @@ export default function LeaseOrderDetailPage({
   // 渲染订单状态
   const renderStatus = (status: string) => {
     let statusText = "";
+    let bgColor = "";
+    let textColor = "";
+
     switch (status) {
+      case "unpaid":
+        statusText = locale === "en" ? "Unpaid" : "未付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
+      case "paid":
+        statusText = locale === "en" ? "Paid" : "已付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
       case "active":
-        statusText = locale === "en" ? "Active" : "租赁中";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-active-bg)",
-              color: "var(--status-active-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
-      case "completed":
-        statusText = locale === "en" ? "Completed" : "已完成";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-completed-bg)",
-              color: "var(--status-completed-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
-      case "canceled":
-        statusText = locale === "en" ? "Canceled" : "已取消";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-canceled-bg)",
-              color: "var(--status-canceled-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
+        statusText = locale === "en" ? "In Progress" : "进行中";
+        bgColor = "var(--status-active-bg)";
+        textColor = "var(--status-active-text)";
+        break;
+      case "expired":
+        statusText = locale === "en" ? "Expired" : "已到期";
+        bgColor = "var(--status-completed-bg)";
+        textColor = "var(--status-completed-text)";
+        break;
       default:
         return null;
     }
+
+    return (
+      <span
+        className="text-xs px-2 py-1 rounded"
+        style={{
+          backgroundColor: bgColor,
+          color: textColor,
+        }}
+      >
+        {statusText}
+      </span>
+    );
   };
 
   // 格式化日期
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString();
   };
 
   // 本地化显示文本
   const texts = {
-    title: locale === "en" ? "Rental Details" : "租赁详情",
+    title: locale === "en" ? "Lease Order Details" : "租赁订单详情",
     orderId: locale === "en" ? "Order ID" : "订单ID",
     productId: locale === "en" ? "Product ID" : "产品ID",
-    renter: locale === "en" ? "Renter" : "租户",
     owner: locale === "en" ? "Owner" : "所有者",
     startDate: locale === "en" ? "Start Date" : "开始日期",
     endDate: locale === "en" ? "End Date" : "到期日期",
@@ -109,10 +176,10 @@ export default function LeaseOrderDetailPage({
     totalAmount: locale === "en" ? "Total Amount" : "总金额",
     txHash: locale === "en" ? "Transaction Hash" : "交易哈希",
     viewOnChain: locale === "en" ? "View on Chain" : "在链上查看",
-    backToList: locale === "en" ? "Back to List" : "返回列表",
     viewProduct: locale === "en" ? "View Product" : "查看产品",
     days: locale === "en" ? "days" : "天",
     perDay: locale === "en" ? "/day" : "/天",
+    withdraw: locale === "en" ? "Withdraw Deposit" : "提取押金",
   };
 
   // 计算总金额
@@ -169,10 +236,11 @@ export default function LeaseOrderDetailPage({
                 {texts.perDay}
               </div>
               <div
-                className="text-[0.75rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
+                className="text-[0.875rem] font-[600]"
+                style={{ color: "var(--primary-color)" }}
               >
-                {texts.duration}: {orderData.duration} {texts.days}
+                {texts.deposit}: {orderData.deposit.toFixed(2)}{" "}
+                {orderData.currency}
               </div>
             </div>
           </div>
@@ -195,14 +263,6 @@ export default function LeaseOrderDetailPage({
               </span>
               <span style={{ color: "var(--foreground)" }}>
                 {orderData.valueId}
-              </span>
-            </div>
-            <div className="flex justify-between py-[8px]">
-              <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.renter}:
-              </span>
-              <span style={{ color: "var(--foreground)" }}>
-                {orderData.renter}
               </span>
             </div>
             <div className="flex justify-between py-[8px]">
@@ -231,11 +291,17 @@ export default function LeaseOrderDetailPage({
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.deposit}:
+                {texts.duration}:
               </span>
               <span style={{ color: "var(--foreground)" }}>
-                {orderData.deposit.toFixed(2)} {orderData.currency}
+                {orderData.duration} {texts.days}
               </span>
+            </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.orderStatus}:
+              </span>
+              <div>{renderStatus(orderData.status)}</div>
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
@@ -247,36 +313,47 @@ export default function LeaseOrderDetailPage({
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.orderStatus}:
-              </span>
-              <div>{renderStatus(orderData.status)}</div>
-            </div>
-            <div className="flex justify-between py-[8px]">
-              <span style={{ color: "var(--tab-inactive-color)" }}>
                 {texts.txHash}:
               </span>
-              <span
-                style={{ color: "var(--primary-color)" }}
-                className="cursor-pointer"
-                onClick={() => alert("查看交易详情")}
-              >
-                {orderData.txHash.substring(0, 6)}...
-                {orderData.txHash.substring(orderData.txHash.length - 4)}
+              <span style={{ color: "var(--foreground)" }}>
+                {orderData.txHash}
               </span>
             </div>
           </div>
 
           <div className="flex gap-[8px] mt-[16px]">
-            <Button variant="outline" fullWidth onClick={() => router.back()}>
-              {texts.backToList}
-            </Button>
-            <Button
-              variant="primary"
-              fullWidth
-              onClick={() => router.push(`/nft/${orderData.valueId}`)}
-            >
-              {texts.viewProduct}
-            </Button>
+            {orderData.status === "expired" && orderData.canWithdraw ? (
+              <>
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={() => {
+                    alert(
+                      locale === "en"
+                        ? "Deposit withdrawn successfully"
+                        : "押金提取成功"
+                    );
+                  }}
+                >
+                  {texts.withdraw}
+                </Button>
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onClick={() => router.push(`/nft/${orderData.valueId}`)}
+                >
+                  {texts.viewProduct}
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="primary"
+                fullWidth
+                onClick={() => router.push(`/nft/${orderData.valueId}`)}
+              >
+                {texts.viewProduct}
+              </Button>
+            )}
           </div>
         </Card>
       </div>

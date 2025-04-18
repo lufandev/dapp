@@ -7,47 +7,70 @@ import Card from "@/components/ui/Card";
 import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
+import Image from "next/image";
 
-// 假设的租赁订单数据
+// 更新的我的租赁订单数据
 const leaseOrders = [
   {
     id: "lo1",
-    valueId: "22",
-    name: "Value ID #022",
-    rentalPrice: 79.99,
-    deposit: 400,
-    duration: 10,
-    currency: "ETH",
-    status: "active", // active, completed, canceled
-    startDate: "2023-06-20T08:30:00Z",
-    endDate: "2023-06-30T08:30:00Z",
-    owner: "0xefgh...9876",
+    valueId: "1",
+    name: "Value ID #001",
+    rentalPrice: 99.99,
+    deposit: 500,
+    duration: 7,
+    currency: "USDT",
+    status: "unpaid", // 未付款状态
+    createTime: "2023-10-15T08:30:00Z",
+    startDate: null,
+    endDate: null,
+    owner: "0x8f24...7ab2",
+    productImage: "/images/nft1.jpg",
   },
   {
     id: "lo2",
-    valueId: "45",
-    name: "Value ID #045",
-    rentalPrice: 199.99,
-    deposit: 1500,
-    duration: 20,
-    currency: "BTC",
-    status: "completed",
-    startDate: "2023-05-10T14:15:00Z",
-    endDate: "2023-05-30T14:15:00Z",
-    owner: "0x1234...5678",
+    valueId: "3",
+    name: "Value ID #128",
+    rentalPrice: 299.99,
+    deposit: 2000,
+    duration: 30,
+    currency: "USDT",
+    status: "paid", // 已付款状态
+    createTime: "2023-09-01T14:15:00Z",
+    startDate: null,
+    endDate: null,
+    owner: "0x7e33...9cf1",
+    productImage: "/images/nft2.jpg",
   },
   {
     id: "lo3",
-    valueId: "67",
-    name: "Value ID #067",
-    rentalPrice: 39.99,
-    deposit: 150,
-    duration: 7,
+    valueId: "5",
+    name: "Value ID #215",
+    rentalPrice: 49.99,
+    deposit: 200,
+    duration: 14,
     currency: "USDT",
-    status: "canceled",
-    startDate: "2023-04-05T10:45:00Z",
-    endDate: "2023-04-12T10:45:00Z",
-    owner: "0x9abc...def0",
+    status: "active", // 进行中状态
+    createTime: "2023-11-10T10:45:00Z",
+    startDate: "2023-11-10T10:45:00Z",
+    endDate: "2023-11-24T10:45:00Z",
+    owner: "0x1a42...3d8e",
+    productImage: "/images/nft3.jpg",
+  },
+  {
+    id: "lo4",
+    valueId: "7",
+    name: "Value ID #376",
+    rentalPrice: 159.99,
+    deposit: 800,
+    duration: 21,
+    currency: "USDT",
+    status: "expired", // 已到期状态
+    createTime: "2023-08-05T12:30:00Z",
+    startDate: "2023-08-05T12:30:00Z",
+    endDate: "2023-08-26T12:30:00Z",
+    owner: "0x3b67...2ef4",
+    productImage: "/images/nft4.jpg",
+    canWithdraw: true, // 可以提取押金
   },
 ];
 
@@ -58,53 +81,50 @@ export default function LeaseOrdersPage() {
   // 渲染订单状态
   const renderStatus = (status: string) => {
     let statusText = "";
+    let bgColor = "";
+    let textColor = "";
+
     switch (status) {
+      case "unpaid":
+        statusText = locale === "en" ? "Unpaid" : "未付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
+      case "paid":
+        statusText = locale === "en" ? "Paid" : "已付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
       case "active":
-        statusText = locale === "en" ? "Active" : "租赁中";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-active-bg)",
-              color: "var(--status-active-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
-      case "completed":
-        statusText = locale === "en" ? "Completed" : "已完成";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-completed-bg)",
-              color: "var(--status-completed-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
-      case "canceled":
-        statusText = locale === "en" ? "Canceled" : "已取消";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-canceled-bg)",
-              color: "var(--status-canceled-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
+        statusText = locale === "en" ? "In Progress" : "进行中";
+        bgColor = "var(--status-active-bg)";
+        textColor = "var(--status-active-text)";
+        break;
+      case "expired":
+        statusText = locale === "en" ? "Expired" : "已到期";
+        bgColor = "var(--status-completed-bg)";
+        textColor = "var(--status-completed-text)";
+        break;
       default:
         return null;
     }
+
+    return (
+      <span
+        className="text-xs px-2 py-1 rounded"
+        style={{
+          backgroundColor: bgColor,
+          color: textColor,
+        }}
+      >
+        {statusText}
+      </span>
+    );
   };
 
   // 格式化日期
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString();
   };
 
@@ -124,6 +144,7 @@ export default function LeaseOrdersPage() {
     owner: locale === "en" ? "Owner" : "所有者",
     perDay: locale === "en" ? "/day" : "/天",
     days: locale === "en" ? "days" : "天",
+    createTime: locale === "en" ? "Create Time" : "创建时间",
   };
 
   return (
@@ -152,74 +173,81 @@ export default function LeaseOrdersPage() {
               style={{ backgroundColor: "var(--card-background)" }}
               onClick={() => router.push(`/orders/lease/${order.id}`)}
             >
-              <div className="flex justify-between items-start mb-[8px]">
-                <h3
-                  className="font-[600]"
-                  style={{ color: "var(--foreground)" }}
-                >
-                  {order.name}
-                </h3>
-                {renderStatus(order.status)}
-              </div>
-              <div
-                className="text-[0.75rem] mb-[8px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.orderId}: {order.id}
-              </div>
-              <div
-                className="text-[0.875rem] font-[600] mb-[4px]"
-                style={{ color: "var(--primary-color)" }}
-              >
-                {texts.rentalPrice}: {order.rentalPrice.toFixed(2)}{" "}
-                {order.currency}
-                {texts.perDay}
-              </div>
-              <div
-                className="text-[0.75rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.deposit}: {order.deposit.toFixed(2)} {order.currency}
-              </div>
-              <div
-                className="text-[0.75rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.owner}: {order.owner}
-              </div>
-              <div
-                className="text-[0.75rem] mb-[8px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.period}: {formatDate(order.startDate)} 至{" "}
-                {formatDate(order.endDate)} ({order.duration}
-                {texts.days})
+              <div className="flex mb-[16px]">
+                <div className="w-[120px] h-[120px] relative rounded-[8px] overflow-hidden mr-[16px]">
+                  <Image
+                    src={order.productImage}
+                    alt={order.name}
+                    fill
+                    style={{ objectFit: "cover" }}
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start mb-[8px]">
+                    <h3
+                      className="font-[600]"
+                      style={{ color: "var(--foreground)" }}
+                    >
+                      {order.name}
+                    </h3>
+                    {renderStatus(order.status)}
+                  </div>
+                  <div
+                    className="text-[0.875rem] font-[600] mb-[4px]"
+                    style={{ color: "var(--primary-color)" }}
+                  >
+                    {texts.rentalPrice}: {order.rentalPrice.toFixed(2)}{" "}
+                    {order.currency}
+                    {texts.perDay}
+                  </div>
+                  <div
+                    className="text-[0.875rem] font-[600]"
+                    style={{ color: "var(--primary-color)" }}
+                  >
+                    {texts.deposit}: {order.deposit.toFixed(2)} {order.currency}
+                  </div>
+                </div>
               </div>
 
-              {order.status === "active" && (
-                <div
-                  className="flex gap-[8px] mt-[8px]"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    onClick={() => alert("取消租赁")}
-                  >
-                    {texts.cancelLease}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/nft/${order.valueId}`);
-                    }}
-                  >
-                    {texts.viewDetails}
-                  </Button>
+              <div
+                className="border-t border-solid"
+                style={{ borderColor: "var(--border-color)" }}
+              ></div>
+
+              <div className="py-[8px]">
+                <div className="flex justify-between py-[8px]">
+                  <span style={{ color: "var(--tab-inactive-color)" }}>
+                    {texts.orderId}:
+                  </span>
+                  <span style={{ color: "var(--foreground)" }}>{order.id}</span>
                 </div>
-              )}
+                <div className="flex justify-between py-[8px]">
+                  <span style={{ color: "var(--tab-inactive-color)" }}>
+                    {texts.owner}:
+                  </span>
+                  <span style={{ color: "var(--foreground)" }}>
+                    {order.owner}
+                  </span>
+                </div>
+                <div className="flex justify-between py-[8px]">
+                  <span style={{ color: "var(--tab-inactive-color)" }}>
+                    {texts.createTime}:
+                  </span>
+                  <span style={{ color: "var(--foreground)" }}>
+                    {new Date(order.createTime).toLocaleString()}
+                  </span>
+                </div>
+                {(order.status === "active" || order.status === "expired") && (
+                  <div
+                    className="text-[0.75rem] mb-[8px]"
+                    style={{ color: "var(--tab-inactive-color)" }}
+                  >
+                    {texts.period}: {formatDate(order.startDate)} 至{" "}
+                    {formatDate(order.endDate)} ({order.duration}
+                    {texts.days})
+                  </div>
+                )}
+              </div>
             </Card>
           ))
         ) : (
