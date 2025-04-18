@@ -8,7 +8,7 @@ import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
-// 假设的出租订单数据
+// 更新的出租订单数据
 const rentalOrders = [
   {
     id: "ro1",
@@ -17,10 +17,13 @@ const rentalOrders = [
     rentalPrice: 99.99,
     deposit: 500,
     duration: 7,
-    currency: "ETH",
-    status: "active", // active, completed, canceled
-    startDate: "2023-06-15T08:30:00Z",
-    endDate: "2023-06-22T08:30:00Z",
+    currency: "USDT",
+    status: "unpaid", // 未付款状态
+    createTime: "2023-10-15T08:30:00Z",
+    startDate: null,
+    endDate: null,
+    renter: "0x8f24...7ab2",
+    productImage: "/images/image.png",
   },
   {
     id: "ro2",
@@ -29,10 +32,13 @@ const rentalOrders = [
     rentalPrice: 299.99,
     deposit: 2000,
     duration: 30,
-    currency: "BTC",
-    status: "completed",
-    startDate: "2023-05-01T14:15:00Z",
-    endDate: "2023-05-31T14:15:00Z",
+    currency: "USDT",
+    status: "paid", // 已付款状态
+    createTime: "2023-09-01T14:15:00Z",
+    startDate: null,
+    endDate: null,
+    renter: "0x7e33...9cf1",
+    productImage: "/images/image.png",
   },
   {
     id: "ro3",
@@ -42,9 +48,28 @@ const rentalOrders = [
     deposit: 200,
     duration: 14,
     currency: "USDT",
-    status: "canceled",
-    startDate: "2023-04-10T10:45:00Z",
-    endDate: "2023-04-24T10:45:00Z",
+    status: "active", // 进行中状态
+    createTime: "2023-11-10T10:45:00Z",
+    startDate: "2023-11-10T10:45:00Z",
+    endDate: "2023-11-24T10:45:00Z",
+    renter: "0x1a42...3d8e",
+    productImage: "/images/image.png",
+  },
+  {
+    id: "ro4",
+    valueId: "7",
+    name: "Value ID #376",
+    rentalPrice: 159.99,
+    deposit: 800,
+    duration: 21,
+    currency: "USDT",
+    status: "expired", // 已到期状态
+    createTime: "2023-08-05T12:30:00Z",
+    startDate: "2023-08-05T12:30:00Z",
+    endDate: "2023-08-26T12:30:00Z",
+    renter: "0x3b67...2ef4",
+    productImage: "/images/image.png",
+    canWithdraw: true, // 可以提取租金
   },
 ];
 
@@ -55,53 +80,55 @@ export default function RentalOrdersPage() {
   // 渲染订单状态
   const renderStatus = (status: string) => {
     let statusText = "";
+    let bgColor = "";
+    let textColor = "";
+
     switch (status) {
+      case "unpaid":
+        statusText = locale === "en" ? "Unpaid" : "未付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
+      case "paid":
+        statusText = locale === "en" ? "Paid" : "已付款";
+        bgColor = "var(--status-pending-bg)";
+        textColor = "var(--status-pending-text)";
+        break;
       case "active":
-        statusText = locale === "en" ? "Active" : "租赁中";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-active-bg)",
-              color: "var(--status-active-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
-      case "completed":
-        statusText = locale === "en" ? "Completed" : "已完成";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-completed-bg)",
-              color: "var(--status-completed-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
+        statusText = locale === "en" ? "In Progress" : "进行中";
+        bgColor = "var(--status-active-bg)";
+        textColor = "var(--status-active-text)";
+        break;
+      case "expired":
+        statusText = locale === "en" ? "Expired" : "已到期";
+        bgColor = "var(--status-completed-bg)";
+        textColor = "var(--status-completed-text)";
+        break;
       case "canceled":
         statusText = locale === "en" ? "Canceled" : "已取消";
-        return (
-          <span
-            className="text-xs px-2 py-1 rounded"
-            style={{
-              backgroundColor: "var(--status-canceled-bg)",
-              color: "var(--status-canceled-text)",
-            }}
-          >
-            {statusText}
-          </span>
-        );
+        bgColor = "var(--status-canceled-bg)";
+        textColor = "var(--status-canceled-text)";
+        break;
       default:
         return null;
     }
+
+    return (
+      <span
+        className="text-xs px-2 py-1 rounded"
+        style={{
+          backgroundColor: bgColor,
+          color: textColor,
+        }}
+      >
+        {statusText}
+      </span>
+    );
   };
 
   // 格式化日期
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString();
   };
 
@@ -118,8 +145,11 @@ export default function RentalOrdersPage() {
     rentalPrice: locale === "en" ? "Rental Price" : "租金",
     deposit: locale === "en" ? "Deposit" : "押金",
     period: locale === "en" ? "Period" : "租期",
+    renter: locale === "en" ? "Renter" : "租户",
+    createTime: locale === "en" ? "Create Time" : "创建时间",
     perDay: locale === "en" ? "/day" : "/天",
     days: locale === "en" ? "days" : "天",
+    withdraw: locale === "en" ? "Withdraw Rent" : "提取租金",
   };
 
   return (
@@ -178,38 +208,27 @@ export default function RentalOrdersPage() {
                 {texts.deposit}: {order.deposit.toFixed(2)} {order.currency}
               </div>
               <div
-                className="text-[0.75rem] mb-[8px]"
+                className="text-[0.75rem] mb-[4px]"
                 style={{ color: "var(--tab-inactive-color)" }}
               >
-                {texts.period}: {formatDate(order.startDate)} 至{" "}
-                {formatDate(order.endDate)} ({order.duration}
-                {texts.days})
+                {texts.renter}: {order.renter}
               </div>
-
-              {/* {order.status === "active" && (
+              <div
+                className="text-[0.75rem] mb-[4px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
+                {texts.createTime}: {formatDate(order.createTime)}
+              </div>
+              {(order.status === "active" || order.status === "expired") && (
                 <div
-                  className="flex gap-[8px] mt-[8px]"
-                  onClick={(e) => e.stopPropagation()}
+                  className="text-[0.75rem] mb-[8px]"
+                  style={{ color: "var(--tab-inactive-color)" }}
                 >
-                  <Button
-                    variant="outline"
-                    fullWidth
-                    onClick={() => alert("取消出租")}
-                  >
-                    {texts.cancelRental}
-                  </Button>
-                  <Button
-                    variant="primary"
-                    fullWidth
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      router.push(`/nft/${order.valueId}`);
-                    }}
-                  >
-                    {texts.viewDetails}
-                  </Button>
+                  {texts.period}: {formatDate(order.startDate)} 至{" "}
+                  {formatDate(order.endDate)} ({order.duration}
+                  {texts.days})
                 </div>
-              )} */}
+              )}
             </Card>
           ))
         ) : (
