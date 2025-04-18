@@ -158,7 +158,7 @@ export default function SellOrdersPage() {
                 {new Date(order.createTime).toLocaleString()}
               </div>
 
-              {order.status === "pending" && (
+              {/* {order.status === "pending" && (
                 <div
                   className="flex gap-[8px] mt-[8px]"
                   onClick={(e) => e.stopPropagation()}
@@ -181,7 +181,7 @@ export default function SellOrdersPage() {
                     {texts.viewDetails}
                   </Button>
                 </div>
-              )}
+              )} */}
             </Card>
           ))
         ) : (

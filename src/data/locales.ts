@@ -107,6 +107,8 @@ const locales: LocaleData = {
     "profile.favorites": "Favorites",
     "profile.sellOrders": "Sale Records",
     "profile.rentalOrders": "Rental Records",
+    "profile.buyOrders": "My Purchases",
+    "profile.leaseOrders": "My Rentals",
 
     // Language Settings
     "language.english": "English",
@@ -214,6 +216,8 @@ const locales: LocaleData = {
     "profile.favorites": "收藏",
     "profile.sellOrders": "出售记录",
     "profile.rentalOrders": "出租记录",
+    "profile.buyOrders": "我的购买",
+    "profile.leaseOrders": "我的租赁",
 
     // Language Settings
     "language.english": "English",

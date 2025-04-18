@@ -9,28 +9,28 @@ import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
-// 假设的出租订单详情数据
-const getRentalOrderData = (id: string) => {
+// 假设的租赁订单详情数据
+const getLeaseOrderData = (id: string) => {
   // 这里可以替换为从API获取数据
   return {
     id: id,
-    valueId: "128",
-    imageUrl: "/images/nft2.jpg",
-    name: "Value ID #128",
-    rentalPrice: 299.99,
-    deposit: 2000,
-    duration: 30,
-    currency: "ETH",
+    valueId: "45",
+    imageUrl: "/images/nft4.jpg",
+    name: "Value ID #045",
+    rentalPrice: 199.99,
+    deposit: 1500,
+    duration: 20,
+    currency: "BTC",
     status: "active", // active, completed, canceled
-    startDate: "2023-05-01T14:15:00Z",
-    endDate: "2023-05-31T14:15:00Z",
+    startDate: "2023-05-10T14:15:00Z",
+    endDate: "2023-05-30T14:15:00Z",
     renter: "0x2468...1357",
-    owner: "0xefgh...9876",
+    owner: "0x1234...5678",
     txHash: "0xabcd...ef01",
   };
 };
 
-export default function RentalOrderDetailPage({
+export default function LeaseOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -38,7 +38,7 @@ export default function RentalOrderDetailPage({
   const router = useRouter();
   const { locale } = useLocale();
   const resolvedParams = React.use(params);
-  const orderData = getRentalOrderData(resolvedParams.id);
+  const orderData = getLeaseOrderData(resolvedParams.id);
 
   // 渲染订单状态
   const renderStatus = (status: string) => {
@@ -95,7 +95,7 @@ export default function RentalOrderDetailPage({
 
   // 本地化显示文本
   const texts = {
-    title: locale === "en" ? "Rental Order Details" : "租赁订单详情",
+    title: locale === "en" ? "Rental Details" : "租赁详情",
     orderId: locale === "en" ? "Order ID" : "订单ID",
     productId: locale === "en" ? "Product ID" : "产品ID",
     renter: locale === "en" ? "Renter" : "租户",

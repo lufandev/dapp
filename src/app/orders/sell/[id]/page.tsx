@@ -31,11 +31,12 @@ const getSellOrderData = (id: string) => {
 export default function SellOrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
   const { locale } = useLocale();
-  const orderData = getSellOrderData(params.id as string);
+  const resolvedParams = React.use(params);
+  const orderData = getSellOrderData(resolvedParams.id);
 
   // 渲染订单状态
   const renderStatus = (status: string) => {

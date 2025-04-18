@@ -8,47 +8,50 @@ import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
-// 假设的出租订单数据
-const rentalOrders = [
+// 假设的租赁订单数据
+const leaseOrders = [
   {
-    id: "ro1",
-    valueId: "1",
-    name: "Value ID #001",
-    rentalPrice: 99.99,
-    deposit: 500,
-    duration: 7,
+    id: "lo1",
+    valueId: "22",
+    name: "Value ID #022",
+    rentalPrice: 79.99,
+    deposit: 400,
+    duration: 10,
     currency: "ETH",
     status: "active", // active, completed, canceled
-    startDate: "2023-06-15T08:30:00Z",
-    endDate: "2023-06-22T08:30:00Z",
+    startDate: "2023-06-20T08:30:00Z",
+    endDate: "2023-06-30T08:30:00Z",
+    owner: "0xefgh...9876",
   },
   {
-    id: "ro2",
-    valueId: "3",
-    name: "Value ID #128",
-    rentalPrice: 299.99,
-    deposit: 2000,
-    duration: 30,
+    id: "lo2",
+    valueId: "45",
+    name: "Value ID #045",
+    rentalPrice: 199.99,
+    deposit: 1500,
+    duration: 20,
     currency: "BTC",
     status: "completed",
-    startDate: "2023-05-01T14:15:00Z",
-    endDate: "2023-05-31T14:15:00Z",
+    startDate: "2023-05-10T14:15:00Z",
+    endDate: "2023-05-30T14:15:00Z",
+    owner: "0x1234...5678",
   },
   {
-    id: "ro3",
-    valueId: "5",
-    name: "Value ID #215",
-    rentalPrice: 49.99,
-    deposit: 200,
-    duration: 14,
+    id: "lo3",
+    valueId: "67",
+    name: "Value ID #067",
+    rentalPrice: 39.99,
+    deposit: 150,
+    duration: 7,
     currency: "USDT",
     status: "canceled",
-    startDate: "2023-04-10T10:45:00Z",
-    endDate: "2023-04-24T10:45:00Z",
+    startDate: "2023-04-05T10:45:00Z",
+    endDate: "2023-04-12T10:45:00Z",
+    owner: "0x9abc...def0",
   },
 ];
 
-export default function RentalOrdersPage() {
+export default function LeaseOrdersPage() {
   const router = useRouter();
   const { t, locale } = useLocale();
 
@@ -110,14 +113,15 @@ export default function RentalOrdersPage() {
     noOrders:
       locale === "en"
         ? "You don't have any rental records"
-        : "您还没有出租记录",
-    goToRent: locale === "en" ? "Go to Rent" : "去出租",
-    cancelRental: locale === "en" ? "Cancel Rental" : "取消出租",
+        : "您还没有租赁记录",
+    goToRent: locale === "en" ? "Go to Rent" : "去租赁",
+    cancelLease: locale === "en" ? "Cancel Rental" : "取消租赁",
     viewDetails: locale === "en" ? "View Details" : "查看详情",
     orderId: locale === "en" ? "Order ID" : "订单号",
     rentalPrice: locale === "en" ? "Rental Price" : "租金",
     deposit: locale === "en" ? "Deposit" : "押金",
     period: locale === "en" ? "Period" : "租期",
+    owner: locale === "en" ? "Owner" : "所有者",
     perDay: locale === "en" ? "/day" : "/天",
     days: locale === "en" ? "days" : "天",
   };
@@ -136,17 +140,17 @@ export default function RentalOrdersPage() {
             className="text-[1.25rem] font-[700]"
             style={{ color: "var(--foreground)" }}
           >
-            {t("profile.rentalOrders")}
+            {t("profile.leaseOrders")}
           </h1>
         </div>
 
-        {rentalOrders.length > 0 ? (
-          rentalOrders.map((order) => (
+        {leaseOrders.length > 0 ? (
+          leaseOrders.map((order) => (
             <Card
               key={order.id}
               className="mb-[16px] p-[16px] cursor-pointer"
               style={{ backgroundColor: "var(--card-background)" }}
-              onClick={() => router.push(`/orders/rental/${order.id}`)}
+              onClick={() => router.push(`/orders/lease/${order.id}`)}
             >
               <div className="flex justify-between items-start mb-[8px]">
                 <h3
@@ -178,6 +182,12 @@ export default function RentalOrdersPage() {
                 {texts.deposit}: {order.deposit.toFixed(2)} {order.currency}
               </div>
               <div
+                className="text-[0.75rem] mb-[4px]"
+                style={{ color: "var(--tab-inactive-color)" }}
+              >
+                {texts.owner}: {order.owner}
+              </div>
+              <div
                 className="text-[0.75rem] mb-[8px]"
                 style={{ color: "var(--tab-inactive-color)" }}
               >
@@ -186,7 +196,7 @@ export default function RentalOrdersPage() {
                 {texts.days})
               </div>
 
-              {/* {order.status === "active" && (
+              {order.status === "active" && (
                 <div
                   className="flex gap-[8px] mt-[8px]"
                   onClick={(e) => e.stopPropagation()}
@@ -194,9 +204,9 @@ export default function RentalOrdersPage() {
                   <Button
                     variant="outline"
                     fullWidth
-                    onClick={() => alert("取消出租")}
+                    onClick={() => alert("取消租赁")}
                   >
-                    {texts.cancelRental}
+                    {texts.cancelLease}
                   </Button>
                   <Button
                     variant="primary"
@@ -209,7 +219,7 @@ export default function RentalOrdersPage() {
                     {texts.viewDetails}
                   </Button>
                 </div>
-              )} */}
+              )}
             </Card>
           ))
         ) : (
@@ -219,10 +229,7 @@ export default function RentalOrdersPage() {
           >
             {texts.noOrders}
             <div className="mt-[16px]">
-              <Button
-                variant="primary"
-                onClick={() => router.push("/inventory")}
-              >
+              <Button variant="primary" onClick={() => router.push("/rental")}>
                 {texts.goToRent}
               </Button>
             </div>

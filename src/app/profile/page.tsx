@@ -17,6 +17,8 @@ import {
   FaChevronRight,
   FaShoppingBag,
   FaExchangeAlt,
+  FaShoppingCart,
+  FaHandshake,
 } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useTheme } from "@/components/ThemeProvider";
@@ -116,6 +118,16 @@ export default function ProfilePage() {
       icon: <FaShieldAlt style={{ color: "var(--primary-color)" }} />,
       title: t("profile.platformAuth"),
       onClick: () => alert(t("profile.platformAuth")),
+    },
+    {
+      icon: <FaShoppingCart style={{ color: "var(--primary-color)" }} />,
+      title: t("profile.buyOrders"),
+      onClick: () => router.push("/orders/buy"),
+    },
+    {
+      icon: <FaHandshake style={{ color: "var(--primary-color)" }} />,
+      title: t("profile.leaseOrders"),
+      onClick: () => router.push("/orders/lease"),
     },
     {
       icon: <FaShoppingBag style={{ color: "var(--primary-color)" }} />,

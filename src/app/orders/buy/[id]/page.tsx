@@ -9,28 +9,26 @@ import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Button from "@/components/ui/Button";
 
-// 假设的出租订单详情数据
-const getRentalOrderData = (id: string) => {
+// 假设的购买订单详情数据
+const getBuyOrderData = (id: string) => {
   // 这里可以替换为从API获取数据
   return {
     id: id,
-    valueId: "128",
-    imageUrl: "/images/nft2.jpg",
-    name: "Value ID #128",
-    rentalPrice: 299.99,
-    deposit: 2000,
-    duration: 30,
-    currency: "ETH",
-    status: "active", // active, completed, canceled
-    startDate: "2023-05-01T14:15:00Z",
-    endDate: "2023-05-31T14:15:00Z",
-    renter: "0x2468...1357",
-    owner: "0xefgh...9876",
+    valueId: "38",
+    imageUrl: "/images/nft3.jpg",
+    name: "Value ID #038",
+    price: 4999.99,
+    currency: "BTC",
+    status: "completed", // pending, completed, canceled
+    createTime: "2023-04-22T14:15:00Z",
+    completedTime: "2023-04-24T09:30:00Z",
+    buyer: "0x2468...1357",
+    seller: "0x5678...9abc",
     txHash: "0xabcd...ef01",
   };
 };
 
-export default function RentalOrderDetailPage({
+export default function BuyOrderDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -38,20 +36,20 @@ export default function RentalOrderDetailPage({
   const router = useRouter();
   const { locale } = useLocale();
   const resolvedParams = React.use(params);
-  const orderData = getRentalOrderData(resolvedParams.id);
+  const orderData = getBuyOrderData(resolvedParams.id);
 
   // 渲染订单状态
   const renderStatus = (status: string) => {
     let statusText = "";
     switch (status) {
-      case "active":
-        statusText = locale === "en" ? "Active" : "租赁中";
+      case "pending":
+        statusText = locale === "en" ? "In Progress" : "进行中";
         return (
           <span
             className="text-xs px-2 py-1 rounded"
             style={{
-              backgroundColor: "var(--status-active-bg)",
-              color: "var(--status-active-text)",
+              backgroundColor: "var(--status-pending-bg)",
+              color: "var(--status-pending-text)",
             }}
           >
             {statusText}
@@ -88,36 +86,22 @@ export default function RentalOrderDetailPage({
     }
   };
 
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
   // 本地化显示文本
   const texts = {
-    title: locale === "en" ? "Rental Order Details" : "租赁订单详情",
+    title: locale === "en" ? "Purchase Details" : "购买详情",
     orderId: locale === "en" ? "Order ID" : "订单ID",
     productId: locale === "en" ? "Product ID" : "产品ID",
-    renter: locale === "en" ? "Renter" : "租户",
-    owner: locale === "en" ? "Owner" : "所有者",
-    startDate: locale === "en" ? "Start Date" : "开始日期",
-    endDate: locale === "en" ? "End Date" : "到期日期",
-    duration: locale === "en" ? "Duration" : "租期",
+    buyer: locale === "en" ? "Buyer" : "买家",
+    seller: locale === "en" ? "Seller" : "卖家",
+    orderTime: locale === "en" ? "Order Time" : "订单时间",
+    completedTime: locale === "en" ? "Completed Time" : "完成时间",
     orderStatus: locale === "en" ? "Order Status" : "订单状态",
-    rentalPrice: locale === "en" ? "Rental Price" : "租金",
-    deposit: locale === "en" ? "Deposit" : "押金",
-    totalAmount: locale === "en" ? "Total Amount" : "总金额",
+    amount: locale === "en" ? "Transaction Amount" : "交易金额",
     txHash: locale === "en" ? "Transaction Hash" : "交易哈希",
     viewOnChain: locale === "en" ? "View on Chain" : "在链上查看",
     backToList: locale === "en" ? "Back to List" : "返回列表",
     viewProduct: locale === "en" ? "View Product" : "查看产品",
-    days: locale === "en" ? "days" : "天",
-    perDay: locale === "en" ? "/day" : "/天",
   };
-
-  // 计算总金额
-  const totalAmount =
-    orderData.rentalPrice * orderData.duration + orderData.deposit;
 
   return (
     <MobileLayout showTabBar={false}>
@@ -164,15 +148,8 @@ export default function RentalOrderDetailPage({
                 className="text-[0.875rem] font-[600] mb-[4px]"
                 style={{ color: "var(--primary-color)" }}
               >
-                {texts.rentalPrice}: {orderData.rentalPrice.toFixed(2)}{" "}
+                {texts.amount}: {orderData.price.toFixed(2)}{" "}
                 {orderData.currency}
-                {texts.perDay}
-              </div>
-              <div
-                className="text-[0.75rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.duration}: {orderData.duration} {texts.days}
               </div>
             </div>
           </div>
@@ -199,52 +176,38 @@ export default function RentalOrderDetailPage({
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.renter}:
+                {texts.buyer}:
               </span>
               <span style={{ color: "var(--foreground)" }}>
-                {orderData.renter}
+                {orderData.buyer}
               </span>
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.owner}:
+                {texts.seller}:
               </span>
               <span style={{ color: "var(--foreground)" }}>
-                {orderData.owner}
+                {orderData.seller}
               </span>
             </div>
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.startDate}:
+                {texts.orderTime}:
               </span>
               <span style={{ color: "var(--foreground)" }}>
-                {formatDate(orderData.startDate)}
+                {new Date(orderData.createTime).toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between py-[8px]">
-              <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.endDate}:
-              </span>
-              <span style={{ color: "var(--foreground)" }}>
-                {formatDate(orderData.endDate)}
-              </span>
-            </div>
-            <div className="flex justify-between py-[8px]">
-              <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.deposit}:
-              </span>
-              <span style={{ color: "var(--foreground)" }}>
-                {orderData.deposit.toFixed(2)} {orderData.currency}
-              </span>
-            </div>
-            <div className="flex justify-between py-[8px]">
-              <span style={{ color: "var(--tab-inactive-color)" }}>
-                {texts.totalAmount}:
-              </span>
-              <span style={{ color: "var(--primary-color)" }}>
-                {totalAmount.toFixed(2)} {orderData.currency}
-              </span>
-            </div>
+            {orderData.status === "completed" && (
+              <div className="flex justify-between py-[8px]">
+                <span style={{ color: "var(--tab-inactive-color)" }}>
+                  {texts.completedTime}:
+                </span>
+                <span style={{ color: "var(--foreground)" }}>
+                  {new Date(orderData.completedTime).toLocaleString()}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between py-[8px]">
               <span style={{ color: "var(--tab-inactive-color)" }}>
                 {texts.orderStatus}:
