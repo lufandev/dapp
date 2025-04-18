@@ -7,6 +7,7 @@ import Card from "@/components/ui/Card";
 import { useLocale } from "@/components/LocaleProvider";
 import { FaArrowLeft } from "react-icons/fa";
 import Image from "next/image";
+import Button from "@/components/ui/Button";
 
 // 假设的订单详情数据
 const sellOrders = [
@@ -19,7 +20,7 @@ const sellOrders = [
     status: "pending", // pending, completed, canceled
     createTime: "2023-05-10T08:30:00Z",
     buyer: "0x1a2b...3c4d",
-    productImage: "/images/nft-sample-1.png",
+    productImage: "/images/nft1.jpg",
   },
   {
     id: "so2",
@@ -30,7 +31,7 @@ const sellOrders = [
     status: "completed",
     createTime: "2023-04-20T14:15:00Z",
     buyer: "0x5e6f...7g8h",
-    productImage: "/images/nft-sample-2.png",
+    productImage: "/images/nft2.jpg",
   },
   {
     id: "so3",
@@ -41,20 +42,21 @@ const sellOrders = [
     status: "canceled",
     createTime: "2023-03-15T10:45:00Z",
     buyer: "0x9i0j...1k2l",
-    productImage: "/images/nft-sample-3.png",
+    productImage: "/images/nft3.jpg",
   },
 ];
 
 export default function SellOrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
   const { locale } = useLocale();
+  const resolvedParams = React.use(params);
 
   // 查找对应订单
-  const order = sellOrders.find((order) => order.id === params.id);
+  const order = sellOrders.find((order) => order.id === resolvedParams.id);
 
   if (!order) {
     return (
@@ -135,14 +137,15 @@ export default function SellOrderDetailPage({
 
   // 本地化显示文本
   const texts = {
-    orderDetails: locale === "en" ? "Order Details" : "订单详情",
+    title: locale === "en" ? "Order Details" : "订单详情",
     orderId: locale === "en" ? "Order ID" : "订单号",
+    productId: locale === "en" ? "Product ID" : "商品ID",
     buyer: locale === "en" ? "Buyer" : "买家",
     orderTime: locale === "en" ? "Order Time" : "下单时间",
     orderStatus: locale === "en" ? "Order Status" : "订单状态",
     transactionAmount: locale === "en" ? "Transaction Amount" : "交易金额",
-    product: locale === "en" ? "Product (ID)" : "商品(ID)",
-    viewDetails: locale === "en" ? "View Product Details" : "查看商品详情",
+    price: locale === "en" ? "Price" : "价格",
+    viewProduct: locale === "en" ? "View Product" : "查看商品",
   };
 
   return (
@@ -159,150 +162,100 @@ export default function SellOrderDetailPage({
             className="text-[1.25rem] font-[700]"
             style={{ color: "var(--foreground)" }}
           >
-            {texts.orderDetails}
+            {texts.title}
           </h1>
         </div>
 
         <Card
-          className="p-[16px] mb-[16px]"
+          className="mb-[16px] p-[16px]"
           style={{ backgroundColor: "var(--card-background)" }}
         >
-          <div className="flex items-center justify-between mb-[12px]">
-            <h2
-              className="text-[1.125rem] font-[600]"
-              style={{ color: "var(--foreground)" }}
-            >
-              {order.name}
-            </h2>
-            {renderStatus(order.status)}
-          </div>
-
-          <div className="grid grid-cols-1 gap-[12px]">
-            <div
-              className="border-b border-opacity-10"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.orderId}
-              </div>
-              <div
-                className="text-[0.875rem] mb-[8px]"
-                style={{ color: "var(--foreground)" }}
-              >
-                {order.id}
-              </div>
+          <div className="flex mb-[16px]">
+            <div className="w-[120px] h-[120px] relative rounded-[8px] overflow-hidden mr-[16px]">
+              <Image
+                src={order.productImage}
+                alt={order.name}
+                fill
+                style={{ objectFit: "cover" }}
+              />
             </div>
-
-            <div
-              className="border-b border-opacity-10"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.buyer}
-              </div>
-              <div
-                className="text-[0.875rem] mb-[8px]"
-                style={{ color: "var(--foreground)" }}
-              >
-                {order.buyer}
-              </div>
-            </div>
-
-            <div
-              className="border-b border-opacity-10"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.orderTime}
-              </div>
-              <div
-                className="text-[0.875rem] mb-[8px]"
-                style={{ color: "var(--foreground)" }}
-              >
-                {new Date(order.createTime).toLocaleString()}
-              </div>
-            </div>
-
-            <div
-              className="border-b border-opacity-10"
-              style={{ borderColor: "var(--border-color)" }}
-            >
-              <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.orderStatus}
-              </div>
-              <div
-                className="text-[0.875rem] mb-[8px]"
-                style={{ color: "var(--foreground)" }}
-              >
+            <div className="flex-1">
+              <div className="flex justify-between items-start mb-[8px]">
+                <h3
+                  className="font-[600]"
+                  style={{ color: "var(--foreground)" }}
+                >
+                  {order.name}
+                </h3>
                 {renderStatus(order.status)}
               </div>
-            </div>
-
-            <div
-              className="border-b border-opacity-10"
-              style={{ borderColor: "var(--border-color)" }}
-            >
               <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.transactionAmount}
-              </div>
-              <div
-                className="text-[1rem] font-[600] mb-[8px]"
+                className="text-[0.875rem] font-[600] mb-[4px]"
                 style={{ color: "var(--primary-color)" }}
               >
-                {order.price.toFixed(2)} {order.currency}
+                {texts.price}: {order.price.toFixed(2)} {order.currency}
               </div>
             </div>
+          </div>
 
-            <div>
-              <div
-                className="text-[0.875rem] mb-[4px]"
-                style={{ color: "var(--tab-inactive-color)" }}
-              >
-                {texts.product}
-              </div>
-              <div
-                className="flex items-center cursor-pointer"
-                onClick={() => router.push(`/nft/${order.valueId}`)}
-              >
-                <div className="w-[48px] h-[48px] relative rounded-md overflow-hidden mr-[12px]">
-                  <Image
-                    src={order.productImage}
-                    alt={order.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <div
-                    className="text-[0.875rem]"
-                    style={{ color: "var(--foreground)" }}
-                  >
-                    {order.name}
-                  </div>
-                  <div
-                    className="text-[0.75rem]"
-                    style={{ color: "var(--primary-color)" }}
-                  >
-                    {texts.viewDetails}
-                  </div>
-                </div>
-              </div>
+          <div
+            className="border-t border-solid"
+            style={{ borderColor: "var(--border-color)" }}
+          ></div>
+
+          <div className="py-[8px]">
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.orderId}:
+              </span>
+              <span style={{ color: "var(--foreground)" }}>{order.id}</span>
             </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.productId}:
+              </span>
+              <span style={{ color: "var(--foreground)" }}>
+                {order.valueId}
+              </span>
+            </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.buyer}:
+              </span>
+              <span style={{ color: "var(--foreground)" }}>{order.buyer}</span>
+            </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.orderTime}:
+              </span>
+              <span style={{ color: "var(--foreground)" }}>
+                {new Date(order.createTime).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.orderStatus}:
+              </span>
+              <div>{renderStatus(order.status)}</div>
+            </div>
+            <div className="flex justify-between py-[8px]">
+              <span style={{ color: "var(--tab-inactive-color)" }}>
+                {texts.transactionAmount}:
+              </span>
+              <span style={{ color: "var(--primary-color)" }}>
+                {order.price.toFixed(2)} {order.currency}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex gap-[8px] mt-[16px]">
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => router.push(`/nft/${order.valueId}`)}
+            >
+              {texts.viewProduct}
+            </Button>
           </div>
         </Card>
       </div>

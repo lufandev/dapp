@@ -63,13 +63,12 @@ const rentalOrders = [
     deposit: 800,
     duration: 21,
     currency: "USDT",
-    status: "expired", // 已到期状态
+    status: "completed", // 已完成状态
     createTime: "2023-08-05T12:30:00Z",
     startDate: "2023-08-05T12:30:00Z",
     endDate: "2023-08-26T12:30:00Z",
     renter: "0x3b67...2ef4",
     productImage: "/images/image.png",
-    canWithdraw: true, // 可以提取租金
   },
 ];
 
@@ -108,6 +107,11 @@ export default function RentalOrdersPage() {
         statusText = locale === "en" ? "Canceled" : "已取消";
         bgColor = "var(--status-canceled-bg)";
         textColor = "var(--status-canceled-text)";
+        break;
+      case "completed":
+        statusText = locale === "en" ? "Completed" : "已完成";
+        bgColor = "var(--status-completed-bg)";
+        textColor = "var(--status-completed-text)";
         break;
       default:
         return null;

@@ -346,38 +346,13 @@ export default function RentalOrderDetailPage({
           </div>
 
           <div className="flex gap-[8px] mt-[16px]">
-            {orderData.status === "expired" && orderData.canWithdraw ? (
-              <>
-                <Button
-                  variant="primary"
-                  fullWidth
-                  onClick={() => {
-                    alert(
-                      locale === "en"
-                        ? "Rent withdrawn successfully"
-                        : "租金提取成功"
-                    );
-                  }}
-                >
-                  {texts.withdraw}
-                </Button>
-                <Button
-                  variant="outline"
-                  fullWidth
-                  onClick={() => router.push(`/nft/${orderData.valueId}`)}
-                >
-                  {texts.viewProduct}
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => router.push(`/nft/${orderData.valueId}`)}
-              >
-                {texts.viewProduct}
-              </Button>
-            )}
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={() => router.push(`/nft/${orderData.valueId}`)}
+            >
+              {texts.viewProduct}
+            </Button>
           </div>
         </Card>
       </div>
