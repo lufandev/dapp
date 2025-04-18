@@ -31,10 +31,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
       const savedTheme = localStorage.getItem("theme") as Theme | null;
       if (savedTheme && (savedTheme === "light" || savedTheme === "dark")) {
         setThemeState(savedTheme);
-        document.documentElement.classList.toggle(
-          "dark",
-          savedTheme === "dark"
-        );
+        document.documentElement.setAttribute("data-theme", savedTheme);
       }
     }
   }, []);
@@ -43,7 +40,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
     setThemeState(newTheme);
     if (typeof window !== "undefined") {
       localStorage.setItem("theme", newTheme);
-      document.documentElement.classList.toggle("dark", newTheme === "dark");
+      document.documentElement.setAttribute("data-theme", newTheme);
     }
   };
 
