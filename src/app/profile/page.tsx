@@ -110,9 +110,9 @@ export default function ProfilePage() {
     },
     {
       icon: <FaWallet style={{ color: "var(--primary-color)" }} />,
-      title: t("profile.walletAddress"),
-      onClick: () =>
-        alert(t("profile.walletAddress") + ": " + mockUser.address),
+      title: t("profile.walletBalance"),
+      extra: "5,836.00 USDT",
+      onClick: () => router.push("/finance"),
     },
     {
       icon: <FaShieldAlt style={{ color: "var(--primary-color)" }} />,

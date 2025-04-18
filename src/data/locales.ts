@@ -109,6 +109,7 @@ const locales: LocaleData = {
     "profile.rentalOrders": "Rental Records",
     "profile.buyOrders": "My Purchases",
     "profile.leaseOrders": "My Rentals",
+    "profile.walletBalance": "Wallet Balance",
 
     // Language Settings
     "language.english": "English",
@@ -117,6 +118,12 @@ const locales: LocaleData = {
     // Theme Settings
     "theme.light": "Light",
     "theme.dark": "Dark",
+
+    // Finance Page
+    "finance.title": "My Finance",
+    "finance.balance": "Current Balance",
+    "finance.withdraw": "Withdraw",
+    "finance.records": "Transaction Records",
   },
   zh: {
     // Common
@@ -218,6 +225,7 @@ const locales: LocaleData = {
     "profile.rentalOrders": "出租记录",
     "profile.buyOrders": "我的购买",
     "profile.leaseOrders": "我的租赁",
+    "profile.walletBalance": "钱包余额",
 
     // Language Settings
     "language.english": "English",
@@ -226,6 +234,12 @@ const locales: LocaleData = {
     // Theme Settings
     "theme.light": "浅色",
     "theme.dark": "深色",
+
+    // Finance Page
+    "finance.title": "我的资金",
+    "finance.balance": "当前余额",
+    "finance.withdraw": "提现",
+    "finance.records": "资金流水",
   },
 };
 
