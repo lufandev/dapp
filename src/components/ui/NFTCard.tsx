@@ -83,8 +83,8 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
           <>
             <div style={{ color: "var(--primary-color)", fontWeight: 700 }}>
               {displayMode === "rental" && isRental && rentalPrice
-                ? `¥${rentalPrice.toFixed(2)}`
-                : `¥${price.toFixed(2)}`}
+                ? `¥${Number(rentalPrice).toFixed(2)}`
+                : `¥${Number(price).toFixed(2)}`}
             </div>
             {displayMode === "rental" && isRental ? (
               <div
