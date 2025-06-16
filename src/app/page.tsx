@@ -8,83 +8,128 @@ import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
 import { FaWallet } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
+import { useAuth } from "@/common/hooks";
 import { apiService } from "@/common/api";
-import { ApiError } from "@/common/http";
 import { ValueID } from "@/types";
 
 export default function Home() {
   const { t } = useLocale();
+  const { isAuthenticated } = useAuth();
 
   // 状态管理
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab] = useState(0);
   const [allValueIDs, setAllValueIDs] = useState<ValueID[]>([]);
   const [recommendedValueIDs, setRecommendedValueIDs] = useState<ValueID[]>([]);
   const [latestValueIDs, setLatestValueIDs] = useState<ValueID[]>([]);
-  const [searchResults, setSearchResults] = useState<ValueID[] | null>(null);
+  const [searchResults, setSearchResults] = useState<ValueID[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [recommendedLoading, setRecommendedLoading] = useState(true);
+  const [latestLoading, setLatestLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // 加载ValueID数据
+  // 加载数据
   useEffect(() => {
-    const fetchValueIDs = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // 并行请求所有数据
-        const [allData, recommendedData, latestData] = await Promise.all([
-          apiService.getAllValueIDs(),
-          // apiService.getRecommendedValueIDs(),
-          // apiService.getLatestValueIDs(),
-        ]);
-
-        setAllValueIDs(allData);
-        // setRecommendedValueIDs(recommendedData);
-        // setLatestValueIDs(latestData);
+        const response = await apiService.getValueIDList({
+          isForSale: true,
+        });
+        setAllValueIDs(response.data);
       } catch (err) {
-        console.error("获取ValueID数据失败:", err);
-
-        if (err instanceof ApiError) {
-          setError(`加载失败: ${err.message}`);
-        } else {
-          setError("网络连接失败，请检查网络设置");
-        }
+        setError(err instanceof Error ? err.message : "加载失败");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchValueIDs();
+    const loadRecommended = async () => {
+      try {
+        setRecommendedLoading(true);
+        const response = await apiService.getValueIDList({
+          isForSale: true,
+          sortBy: "favoriteCount",
+          sortOrder: "DESC",
+          limit: 20,
+        });
+        setRecommendedValueIDs(response.data);
+      } catch (err) {
+        console.error("加载推荐数据失败:", err);
+      } finally {
+        setRecommendedLoading(false);
+      }
+    };
+
+    const loadLatest = async () => {
+      try {
+        setLatestLoading(true);
+        const response = await apiService.getValueIDList({
+          isForSale: true,
+          sortBy: "createdAt",
+          sortOrder: "DESC",
+          limit: 20,
+        });
+        setLatestValueIDs(response.data);
+      } catch (err) {
+        console.error("加载最新数据失败:", err);
+      } finally {
+        setLatestLoading(false);
+      }
+    };
+
+    loadData();
+    loadRecommended();
+    loadLatest();
   }, []);
 
   // 搜索处理
   const handleSearch = async (query: string) => {
+    setSearchQuery(query);
     if (!query.trim()) {
-      setSearchResults(null);
+      setSearchResults([]);
       return;
     }
 
     try {
       setSearchLoading(true);
-      const results = await apiService.searchValueIDs(query);
-      setSearchResults(results);
+      const response = await apiService.getValueIDList({
+        isForSale: true,
+        name: query,
+      });
+      setSearchResults(response.data);
     } catch (err) {
       console.error("搜索失败:", err);
-      // 搜索失败时使用本地过滤作为备选方案
-      const localResults = allValueIDs.filter(
-        (valueId) =>
-          valueId.name.toLowerCase().includes(query.toLowerCase()) ||
-          valueId.description.toLowerCase().includes(query.toLowerCase())
-      );
-      setSearchResults(localResults);
+      setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
   };
 
+  // 刷新数据
+  const refresh = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiService.getValueIDList({
+        isForSale: true,
+      });
+      setAllValueIDs(response.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "刷新失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 渲染ValueID网格
-  const renderValueIDGrid = (valueIDs: ValueID[]) => {
-    if (loading) {
+  const renderValueIDGrid = (
+    valueIDs: ValueID[],
+    isLoading: boolean,
+    errorMsg?: string | null
+  ) => {
+    if (isLoading) {
       return (
         <div className="flex justify-center items-center py-16">
           <div className="text-center">
@@ -95,14 +140,11 @@ export default function Home() {
       );
     }
 
-    if (error) {
+    if (errorMsg) {
       return (
         <div className="text-center py-16">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2"
-          >
+          <p className="text-red-500 mb-4">{errorMsg}</p>
+          <Button onClick={refresh} className="px-4 py-2">
             重试
           </Button>
         </div>
@@ -122,15 +164,15 @@ export default function Home() {
         {valueIDs.map((valueId) => (
           <ValueIDCard
             key={valueId.id}
-            id={valueId.id}
+            id={valueId.id.toString()}
             name={valueId.name}
             image={valueId.image}
-            indexNumber={valueId.indexNumber}
+            indexNumber={valueId.indexNumber || ""}
             price={valueId.price}
             rarity={valueId.rarity}
             isRental={valueId.isForRent}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency}
+            paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
           />
         ))}
@@ -138,7 +180,7 @@ export default function Home() {
     );
   };
 
-  // 渲染搜索结果网格
+  // 渲染搜索结果
   const renderSearchResults = () => {
     if (searchLoading) {
       return (
@@ -149,22 +191,30 @@ export default function Home() {
       );
     }
 
-    if (!searchResults) return null;
+    if (!searchQuery || searchResults.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500">
+            {!searchQuery ? "输入关键词开始搜索" : "没有找到相关结果"}
+          </p>
+        </div>
+      );
+    }
 
     return (
       <div className="grid grid-cols-2 gap-[16px] mb-[100px]">
         {searchResults.map((valueId) => (
           <ValueIDCard
             key={valueId.id}
-            id={valueId.id}
+            id={valueId.id.toString()}
             name={valueId.name}
             image={valueId.image}
-            indexNumber={valueId.indexNumber}
+            indexNumber={valueId.indexNumber || ""}
             price={valueId.price}
             rarity={valueId.rarity}
             isRental={valueId.isForRent}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency}
+            paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
           />
         ))}
@@ -175,16 +225,16 @@ export default function Home() {
   // 标签页配置
   const tabs = [
     {
-      label: t("home.all"),
-      content: renderValueIDGrid(allValueIDs),
+      label: t("home.all") || "全部",
+      content: renderValueIDGrid(allValueIDs, loading, error),
     },
     {
-      label: t("home.recommended"),
-      content: renderValueIDGrid(recommendedValueIDs),
+      label: t("home.recommended") || "推荐",
+      content: renderValueIDGrid(recommendedValueIDs, recommendedLoading),
     },
     {
-      label: t("home.latest"),
-      content: renderValueIDGrid(latestValueIDs),
+      label: t("home.latest") || "最新",
+      content: renderValueIDGrid(latestValueIDs, latestLoading),
     },
   ];
 
@@ -197,41 +247,40 @@ export default function Home() {
             variant="outline"
             size="sm"
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
-            onClick={() => alert(t("common.connectWallet"))}
+            onClick={() => {
+              if (isAuthenticated) {
+                alert("钱包已连接");
+              } else {
+                alert(t("common.connectWallet") || "连接钱包");
+              }
+            }}
           >
-            <FaWallet className="text-[14px]" />
-            <span>{t("common.connectWallet")}</span>
+            <FaWallet size={12} />
+            <span className="text-xs font-medium">
+              {isAuthenticated
+                ? "已连接"
+                : t("common.connectWallet") || "连接钱包"}
+            </span>
           </Button>
         </div>
 
-        <div className="mb-6">
-          <SearchBar onSearch={handleSearch} placeholder={t("common.search")} />
+        {/* 搜索栏 */}
+        <div className="mb-[16px]">
+          <SearchBar onSearch={handleSearch} placeholder="搜索 Value ID" />
         </div>
 
-        {searchResults !== null ? (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium">
-                {t("common.searchResults")} ({searchResults.length})
-              </h2>
-              <button
-                className="text-[#3b82f6] text-sm"
-                onClick={() => setSearchResults(null)}
-              >
-                {t("common.back")}
-              </button>
-            </div>
-            {searchResults.length > 0 ? (
-              renderSearchResults()
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                {t("common.noResults")}
-              </div>
-            )}
+        {/* 搜索结果 */}
+        {searchQuery && (
+          <div className="mb-[16px]">
+            <h2 className="text-lg font-semibold mb-[12px]">
+              搜索结果 &quot;{searchQuery}&quot;
+            </h2>
+            {renderSearchResults()}
           </div>
-        ) : (
-          <TabView tabs={tabs} />
         )}
+
+        {/* 标签页内容 */}
+        {!searchQuery && <TabView tabs={tabs} defaultTab={activeTab} />}
       </div>
     </MobileLayout>
   );

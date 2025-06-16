@@ -1,31 +1,33 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/ui/SearchBar";
 import ValueIDCard from "@/components/ui/NFTCard";
-import { getRentalNFTs } from "@/data/mockData";
+// import { getRentalNFTs } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
+import { apiService } from "@/common/api";
+import { ValueID } from "@/types";
 
 export default function RentalPage() {
   const { t } = useLocale();
-  const [searchResults, setSearchResults] = useState<ReturnType<
-    typeof getRentalNFTs
-  > | null>(null);
-  const rentalNFTs = getRentalNFTs();
+  const [searchResults, setSearchResults] = useState<ValueID[]>([]);
+  useEffect(() => {
+    const loadData = async () => {
+      const response = await apiService.getValueIDList({
+        isForRent: true,
+      });
+      setSearchResults(response.data);
+    };
+    loadData();
+  }, []);
 
-  const handleSearch = (query: string) => {
-    if (!query.trim()) {
-      setSearchResults(null);
-      return;
-    }
-
-    const results = rentalNFTs.filter(
-      (valueId) =>
-        valueId.name.toLowerCase().includes(query.toLowerCase()) ||
-        valueId.description.toLowerCase().includes(query.toLowerCase())
-    );
-    setSearchResults(results);
+  const handleSearch = async (query: string) => {
+    const results = await apiService.getValueIDList({
+      isForRent: true,
+      name: query,
+    });
+    setSearchResults(results.data);
   };
 
   const renderValueIDGrid = (valueIDs: ReturnType<typeof getRentalNFTs>) => {

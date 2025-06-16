@@ -1,28 +1,43 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import TabView from "@/components/ui/TabView";
 import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
-import { mockValueIDs, getFavoriteNFTs } from "@/data/mockData";
-import { mockUser } from "@/data/mockData";
 import { useLocale } from "@/components/LocaleProvider";
+import { ValueID } from "@/types";
+import { useState } from "react";
+import { apiService } from "@/common/api";
 
 export default function InventoryPage() {
   const { t } = useLocale();
   const router = useRouter();
-  const ownedValueIDs = mockValueIDs.filter((valueId) =>
-    mockUser.ownedNFTs.includes(valueId.id)
-  );
-  const rentedValueIDs = mockValueIDs.filter((valueId) =>
-    mockUser.rentedNFTs.includes(valueId.id)
-  );
-  const favoriteValueIDs = getFavoriteNFTs();
+  const [ownedValueIDs, setOwnedValueIDs] = useState<ValueID[]>([]);
+  const [rentedValueIDs, setRentedValueIDs] = useState<ValueID[]>([]);
+  const [favoriteValueIDs, setFavoriteValueIDs] = useState<ValueID[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const [ownedResponse, rentedResponse, favoriteResponse] =
+        await Promise.all([
+          apiService.getCurrentUserValueIDs(),
+          apiService.getCurrentUserRentedValueIDs(),
+          apiService.getCurrentUserFavoriteValueIDs(),
+        ]);
+      console.log(ownedResponse, rentedResponse, favoriteResponse);
+      setOwnedValueIDs(ownedResponse.ownedValueIDs);
+      setRentedValueIDs(rentedResponse.rentedValueIDs);
+      setFavoriteValueIDs(
+        favoriteResponse.favorites.map((item) => item.valueID)
+      );
+    };
+    loadData();
+  }, []);
 
   const renderValueIDGrid = (
-    valueIDs: typeof mockValueIDs,
+    valueIDs: ValueID[],
     displayMode: "inventory" | "sale" | "rental" = "inventory"
   ) => {
     return (
