@@ -225,7 +225,7 @@ class ApiService {
   }
 
   // 获取ValueID详情
-  async getValueIDDetail(id: number): Promise<ValueID> {
+  async getValueIDDetail(id: string): Promise<ValueID> {
     return httpClient.get<ValueID>(API_ENDPOINTS.VALUE_IDS.DETAIL(id));
   }
 

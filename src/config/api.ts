@@ -34,7 +34,7 @@ export const API_ENDPOINTS = {
   // ==================== NFT/ValueID相关 ====================
   VALUE_IDS: {
     LIST: "/value-ids",
-    DETAIL: (id: number) => `/value-ids/${id}`,
+    DETAIL: (id: string) => `/value-ids/${id}`,
     CREATE: "/value-ids",
     UPDATE: (id: number) => `/value-ids/${id}`,
     DELETE: (id: number) => `/value-ids/${id}`,

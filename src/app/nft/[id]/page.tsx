@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { useRouter, useParams } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
@@ -9,10 +9,11 @@ import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import { getNFTById } from "@/data/mockData";
-import { mockUser } from "@/data/mockData";
+import { apiService } from "@/common/api";
+// import { mockUser } from "@/data/mockData";
 import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
+import { User, ValueID } from "@/types";
 
 // 支付币种选项
 const currencyOptions = [
@@ -27,20 +28,39 @@ export default function NFTDetailPage() {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
-  const valueId = getNFTById(id);
+  // const valueId = (await apiService.getValueIDDetail(id)).data;
+  const [valueId, setValueId] = useState<ValueID | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  useEffect(() => {
+    const loadData = async () => {
+      const response = await apiService.getValueIDDetail(id);
+      console.log(response);
+      setValueId(response);
+    };
+    loadData();
+  }, [id]);
+  useEffect(() => {
+    const loadData = async () => {
+      const response = await apiService.getUserProfile(1);
+      setUser(response);
+      console.log(response);
+    };
+    loadData();
+  }, []);
+
   const [activeTab, setActiveTab] = useState<"details" | "attributes">(
     "details"
   );
 
   // 检查ID是否属于当前用户
-  const isOwnedByUser = mockUser.ownedNFTs.includes(id);
+  const isOwnedByUser = user?.ownedValueIDs?.some((item) => item.id === id);
 
   // 检查是否是租赁的ID
-  const isRentedByUser = mockUser.rentedNFTs.includes(id);
+  const isRentedByUser = user?.rentedValueIDs?.some((item) => item.id === id);
 
   // 检查ID是否已收藏
   const [isFavorite, setIsFavorite] = useState(
-    mockUser.favoriteNFTs.includes(id)
+    user?.favorites?.some((item) => item.id === id)
   );
 
   // 处理收藏/取消收藏
@@ -59,7 +79,7 @@ export default function NFTDetailPage() {
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellPrice, setSellPrice] = useState("");
   const [sellCurrency, setSellCurrency] = useState("ETH");
-  const [sellAddress, setSellAddress] = useState(mockUser.address);
+  const [sellAddress, setSellAddress] = useState(user?.address);
 
   // 出租弹框状态
   const [rentModalOpen, setRentModalOpen] = useState(false);
@@ -67,7 +87,7 @@ export default function NFTDetailPage() {
   const [rentDeposit, setRentDeposit] = useState("");
   const [rentDuration, setRentDuration] = useState("");
   const [rentCurrency, setRentCurrency] = useState("ETH");
-  const [rentAddress, setRentAddress] = useState(mockUser.address);
+  const [rentAddress, setRentAddress] = useState(user?.address);
 
   // 处理出售表单提交
   const handleSellSubmit = () => {
@@ -75,7 +95,7 @@ export default function NFTDetailPage() {
       t("sell.success", {
         price: sellPrice,
         currency: sellCurrency,
-        address: sellAddress,
+        address: sellAddress as string,
       })
     );
     setSellModalOpen(false);
@@ -89,7 +109,7 @@ export default function NFTDetailPage() {
         currency: rentCurrency,
         deposit: rentDeposit,
         duration: rentDuration,
-        address: rentAddress,
+        address: rentAddress as string,
       })
     );
     setRentModalOpen(false);
@@ -191,8 +211,8 @@ export default function NFTDetailPage() {
                   style={{ color: "var(--primary-color)" }}
                 >
                   {displayMode === "rental" && valueId.rentalPrice
-                    ? `¥${valueId.rentalPrice.toFixed(2)}`
-                    : `¥${valueId.price.toFixed(2)}`}
+                    ? `$${Number(valueId.rentalPrice).toFixed(2)}`
+                    : `$${Number(valueId.price).toFixed(2)}`}
                 </div>
               )}
             </div>
@@ -267,7 +287,7 @@ export default function NFTDetailPage() {
                       {t("nft.owner")}
                     </div>
                     <div style={{ color: "var(--foreground)" }}>
-                      {valueId.owner}
+                      {valueId.owner.username}
                     </div>
                   </div>
 
@@ -316,7 +336,7 @@ export default function NFTDetailPage() {
                       className="text-[0.75rem]"
                       style={{ color: "var(--tab-inactive-color)" }}
                     >
-                      {attr.trait_type}
+                      {attr.traitType}
                     </div>
                     <div
                       className="font-[500]"

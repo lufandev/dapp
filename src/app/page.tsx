@@ -8,13 +8,14 @@ import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
 import { FaWallet } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
-import { useAuth } from "@/common/hooks";
+// import { useAuth } from "@/common/hooks";
 import { apiService } from "@/common/api";
 import { ValueID } from "@/types";
 
 export default function Home() {
   const { t } = useLocale();
-  const { isAuthenticated } = useAuth();
+  // const { isAuthenticated } = useAuth();
+  const isAuthenticated = true;
 
   // 状态管理
   const [searchQuery, setSearchQuery] = useState("");

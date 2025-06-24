@@ -29,6 +29,9 @@ export interface User {
   avatar: string;
   balance: number;
   createdAt: string;
+  ownedValueIDs?: ValueID[];
+  rentedValueIDs?: ValueID[];
+  favorites?: ValueID[];
 }
 
 export interface AuthResponse {
