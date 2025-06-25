@@ -11,11 +11,11 @@ import { useLocale } from "@/components/LocaleProvider";
 // import { useAuth } from "@/common/hooks";
 import { apiService } from "@/common/api";
 import { ValueID } from "@/types";
-
+import { ethers  } from "ethers";
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
-  const isAuthenticated = true;
+  let isAuthenticated = false;
 
   // 状态管理
   const [searchQuery, setSearchQuery] = useState("");
@@ -248,11 +248,20 @@ export default function Home() {
             variant="outline"
             size="sm"
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
-            onClick={() => {
+            onClick={async () => {
               if (isAuthenticated) {
                 alert("钱包已连接");
               } else {
                 alert(t("common.connectWallet") || "连接钱包");
+                const provider = new ethers.providers.Web3Provider(
+                  window.ethereum
+                );  
+                await provider.send("eth_requestAccounts", []);
+                const signer = provider.getSigner();
+                console.log(signer);
+                const address = await signer.getAddress();
+                console.log(address);
+                // isAuthenticated = true;
               }
             }}
           >
