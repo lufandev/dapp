@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import LocaleProvider from "@/components/LocaleProvider";
 import ThemeProvider from "@/components/ThemeProvider";
+import FeedbackProvider from "@/components/ui/Feedback";
 
 export const metadata: Metadata = {
   title: "QF-NFT | 数字藏品交易平台",
@@ -19,7 +20,11 @@ export default function RootLayout({
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="antialiased">
         <ThemeProvider>
-          <LocaleProvider>{children}</LocaleProvider>
+          <LocaleProvider>
+            <FeedbackProvider>
+              {children}
+            </FeedbackProvider>
+          </LocaleProvider>
         </ThemeProvider>
       </body>
     </html>

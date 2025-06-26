@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
-import { messageBox } from "../service/message-service"
+// import { messageBox } from "../service/message-service"
+import { useFeedback } from "@/components/ui/Feedback";
 import { configuration } from '../config/blockChain'
 
     export const connectOnce = async () => {
@@ -12,14 +13,15 @@ import { configuration } from '../config/blockChain'
         return{chainId:network.chainId, address: address, provider, signer};
     }
     export const trying = async () => {
+        const {toast} = useFeedback();
         const {chainId, address, provider, signer} = await connectOnce();
         const supported = configuration().chainId.toString();
         if (chainId.toString() == supported) {
-            messageBox("success", "", 'chainId: ' + chainId + "      account: " + address.substring(0, 5) + "..")
+          toast.success('chainId: ' + chainId + "      account: " + address.substring(0, 5) + "..")
 
             return {success:true, provider, signer};
         }
-        messageBox("warning", "", 'chainId: ' + chainId + "      account: " + address.substring(0, 5) + "..")
+        toast.warning('chainId: ' + chainId + "      account: " + address.substring(0, 5) + "..")
 
         return {success:false};
     }

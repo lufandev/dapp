@@ -13,6 +13,7 @@ import { apiService } from "@/common/api";
 // import { mockUser } from "@/data/mockData";
 import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
+import { useFeedback } from "@/components/ui/Feedback";
 import { User, ValueID } from "@/types";
 
 // 支付币种选项
@@ -25,6 +26,7 @@ const currencyOptions = [
 
 export default function NFTDetailPage() {
   const { t } = useLocale();
+  const { toast, confirm } = useFeedback();
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
@@ -69,9 +71,9 @@ export default function NFTDetailPage() {
     // 在实际应用中，这里应该调用API来更新用户的收藏列表
     // 这里仅做前端状态更新
     if (!isFavorite) {
-      alert(t("nft.addedToFavorites"));
+      toast.success(t("nft.addedToFavorites"));
     } else {
-      alert(t("nft.removedFromFavorites"));
+      toast.info(t("nft.removedFromFavorites"));
     }
   };
 
@@ -90,29 +92,51 @@ export default function NFTDetailPage() {
   const [rentAddress, setRentAddress] = useState(user?.address);
 
   // 处理出售表单提交
-  const handleSellSubmit = () => {
-    alert(
-      t("sell.success", {
-        price: sellPrice,
-        currency: sellCurrency,
-        address: sellAddress as string,
-      })
-    );
-    setSellModalOpen(false);
+  const handleSellSubmit = async () => {
+    const confirmed = await confirm({
+      title: "确认出售",
+      message: `确认以 ${sellPrice} ${sellCurrency} 的价格出售此NFT吗？`,
+      type: "info",
+      confirmText: "确认出售",
+      cancelText: "取消",
+    });
+
+    if (confirmed) {
+      toast.success(
+        "出售成功",
+        t("sell.success", {
+          price: sellPrice,
+          currency: sellCurrency,
+          address: sellAddress as string,
+        })
+      );
+      setSellModalOpen(false);
+    }
   };
 
   // 处理出租表单提交
-  const handleRentSubmit = () => {
-    alert(
-      t("rent.success", {
-        price: rentPrice,
-        currency: rentCurrency,
-        deposit: rentDeposit,
-        duration: rentDuration,
-        address: rentAddress as string,
-      })
-    );
-    setRentModalOpen(false);
+  const handleRentSubmit = async () => {
+    const confirmed = await confirm({  
+      title: "确认出租",
+      message: `确认以 ${rentPrice} ${rentCurrency}/天的价格出租此NFT ${rentDuration}天吗？`,
+      type: "info",
+      confirmText: "确认出租",
+      cancelText: "取消",
+    });
+
+    if (confirmed) {
+      toast.success(
+        "出租成功", 
+        t("rent.success", {
+          price: rentPrice,
+          currency: rentCurrency,
+          deposit: rentDeposit,
+          duration: rentDuration,
+          address: rentAddress as string,
+        })
+      );
+      setRentModalOpen(false);
+    }
   };
 
   if (!valueId) {
@@ -383,7 +407,18 @@ export default function NFTDetailPage() {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => alert(t("nft.returnRental"))}
+              onClick={async () => {
+                const confirmed = await confirm({
+                  title: "确认归还",
+                  message: "确认要归还此租赁的NFT吗？",
+                  type: "info",
+                  confirmText: "确认归还",
+                  cancelText: "取消",
+                });
+                if (confirmed) {
+                  toast.success("归还成功", t("nft.returnRental"));
+                }
+              }}
             >
               {t("nft.returnRental")}
             </Button>
@@ -394,7 +429,18 @@ export default function NFTDetailPage() {
                 <Button
                   variant="primary"
                   fullWidth
-                  onClick={() => alert(t("nft.buyNow"))}
+                  onClick={async () => {
+                    const confirmed = await confirm({
+                      title: "确认购买",
+                      message: `确认购买此NFT吗？价格：${valueId.price || 'N/A'}`,
+                      type: "info",
+                      confirmText: "确认购买",
+                      cancelText: "取消",
+                    });
+                    if (confirmed) {
+                      toast.success("购买成功", t("nft.buyNow"));
+                    }
+                  }}
                 >
                   {t("nft.buyNow")}
                 </Button>
@@ -403,7 +449,18 @@ export default function NFTDetailPage() {
                 <Button
                   variant="outline"
                   fullWidth
-                  onClick={() => alert(t("nft.rentNow"))}
+                  onClick={async () => {
+                    const confirmed = await confirm({
+                      title: "确认租赁",
+                      message: `确认租赁此NFT吗？租金：${valueId.rentalPrice || 'N/A'}/天`,
+                      type: "info",
+                      confirmText: "确认租赁",
+                      cancelText: "取消",
+                    });
+                    if (confirmed) {
+                      toast.success("租赁成功", t("nft.rentNow"));
+                    }
+                  }}
                 >
                   {t("nft.rentNow")}
                 </Button>
