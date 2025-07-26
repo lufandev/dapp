@@ -12,6 +12,8 @@ import { useLocale } from "@/components/LocaleProvider";
 import { apiService } from "@/common/api";
 import { ValueID } from "@/types";
 import { ethers  } from "ethers";
+import { useFeedback } from "@/components/ui/Feedback";
+import {connect} from "@/common/connection-service"
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
@@ -29,7 +31,7 @@ export default function Home() {
   const [latestLoading, setLatestLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const {toast} = useFeedback();
   // 加载数据
   useEffect(() => {
     const loadData = async () => {
@@ -249,20 +251,21 @@ export default function Home() {
             size="sm"
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
             onClick={async () => {
-              if (isAuthenticated) {
-                alert("钱包已连接");
-              } else {
-                alert(t("common.connectWallet") || "连接钱包");
-                const provider = new ethers.providers.Web3Provider(
-                  window.ethereum
-                );  
-                await provider.send("eth_requestAccounts", []);
-                const signer = provider.getSigner();
-                console.log(signer);
-                const address = await signer.getAddress();
-                console.log(address);
+              await connect();
+              // if (isAuthenticated) {
+              //   toast.success("钱包已连接");
+              // } else {
+                // toast.info(t("common.connectWallet") || "连接钱包");
+                // const provider = new ethers.providers.Web3Provider(
+                //   window.ethereum
+                // );  
+                // await provider.send("eth_requestAccounts", []);
+                // const signer = provider.getSigner();
+                // console.log(signer);
+                // const address = await signer.getAddress();
+                // console.log(address);
                 // isAuthenticated = true;
-              }
+              // }
             }}
           >
             <FaWallet size={12} />

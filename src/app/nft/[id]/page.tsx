@@ -104,13 +104,13 @@ export default function NFTDetailPage() {
     if (confirmed) {
       toast.success(
         "出售成功",
-        t("sell.success", {
-          price: sellPrice,
-          currency: sellCurrency,
-          address: sellAddress as string,
-        })
-      );
-      setSellModalOpen(false);
+      t("sell.success", {
+        price: sellPrice,
+        currency: sellCurrency,
+        address: sellAddress as string,
+      })
+    );
+    setSellModalOpen(false);
     }
   };
 
@@ -127,15 +127,15 @@ export default function NFTDetailPage() {
     if (confirmed) {
       toast.success(
         "出租成功", 
-        t("rent.success", {
-          price: rentPrice,
-          currency: rentCurrency,
-          deposit: rentDeposit,
-          duration: rentDuration,
-          address: rentAddress as string,
-        })
-      );
-      setRentModalOpen(false);
+      t("rent.success", {
+        price: rentPrice,
+        currency: rentCurrency,
+        deposit: rentDeposit,
+        duration: rentDuration,
+        address: rentAddress as string,
+      })
+    );
+    setRentModalOpen(false);
     }
   };
 

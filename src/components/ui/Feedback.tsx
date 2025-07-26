@@ -1,3 +1,4 @@
+"use client"
 import React, { useState, useEffect, createContext, useContext } from "react";
 import { FaCheckCircle, FaExclamationCircle, FaTimesCircle, FaInfoCircle, FaTimes } from "react-icons/fa";
 
@@ -41,6 +42,9 @@ interface FeedbackContextType {
 }
 
 const FeedbackContext = createContext<FeedbackContextType | undefined>(undefined);
+
+// 全局反馈服务实例
+let globalFeedbackService: FeedbackContextType | null = null;
 
 // Toast组件
 const Toast: React.FC<{
@@ -336,6 +340,14 @@ export const FeedbackProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     removeToast,
   };
 
+  // 设置全局反馈服务实例
+  useEffect(() => {
+    globalFeedbackService = contextValue;
+    return () => {
+      globalFeedbackService = null;
+    };
+  }, [contextValue]);
+
   return (
     <FeedbackContext.Provider value={contextValue}>
       {children}
@@ -357,6 +369,48 @@ export const useFeedback = () => {
     throw new Error("useFeedback must be used within a FeedbackProvider");
   }
   return context;
+};
+
+// 全局反馈调用函数（用于非 React 组件中）
+export const globalFeedback = {
+  toast: {
+    success: (title: string, message?: string, duration?: number) => {
+      if (globalFeedbackService) {
+        globalFeedbackService.toast.success(title, message, duration);
+      } else {
+        console.warn("FeedbackProvider not initialized");
+      }
+    },
+    error: (title: string, message?: string, duration?: number) => {
+      if (globalFeedbackService) {
+        globalFeedbackService.toast.error(title, message, duration);
+      } else {
+        console.warn("FeedbackProvider not initialized");
+      }
+    },
+    warning: (title: string, message?: string, duration?: number) => {
+      if (globalFeedbackService) {
+        globalFeedbackService.toast.warning(title, message, duration);
+      } else {
+        console.warn("FeedbackProvider not initialized");
+      }
+    },
+    info: (title: string, message?: string, duration?: number) => {
+      if (globalFeedbackService) {
+        globalFeedbackService.toast.info(title, message, duration);
+      } else {
+        console.warn("FeedbackProvider not initialized");
+      }
+    },
+  },
+  confirm: async (options: ConfirmOptions): Promise<boolean> => {
+    if (globalFeedbackService) {
+      return await globalFeedbackService.confirm(options);
+    } else {
+      console.warn("FeedbackProvider not initialized");
+      return false;
+    }
+  },
 };
 
 export default FeedbackProvider; 
