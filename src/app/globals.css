@@ -1,4 +1,5 @@
-@import "tailwindcss/preflight";
+@tailwind base;
+@tailwind components;
 @tailwind utilities;
 
 :root {
@@ -52,13 +53,6 @@
   --status-completed-text: #95de64;
   --status-canceled-bg: #5c0011;
   --status-canceled-text: #ff7875;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 /* 隐藏滚动条 */
