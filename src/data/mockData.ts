@@ -133,14 +133,15 @@ export const mockValueIDs: ValueID[] = [
 export const mockNFTs = mockValueIDs;
 
 export const mockUser: User = {
-  id: "1",
+  id: 1,
   address: "0x1234...5678",
   username: "数字藏家",
   balance: 1000,
   avatar: "/images/avatar.jpg",
-  ownedNFTs: ["1", "3", "5"],
-  rentedNFTs: ["2", "4"],
-  favoriteNFTs: ["2", "6"],
+  createdAt: "2023-01-01T00:00:00Z",
+  ownedValueIDs: mockValueIDs.filter((id) => ["1", "3", "5"].includes(id.id)),
+  rentedValueIDs: mockValueIDs.filter((id) => ["2", "4"].includes(id.id)),
+  favorites: mockValueIDs.filter((id) => ["2", "6"].includes(id.id)),
 };
 
 export const getRecommendedNFTs = (): ValueID[] => {

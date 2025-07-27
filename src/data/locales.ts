@@ -124,6 +124,31 @@ const locales: LocaleData = {
     "finance.balance": "Current Balance",
     "finance.withdraw": "Withdraw",
     "finance.records": "Transaction Records",
+
+    // Register ID
+    "register.title": "Register ID",
+    "register.paymentTitle": "Payment Required",
+    "register.paymentDesc":
+      "To register an ID, you need to pay 10 USDT registration fee",
+    "register.paymentAmount": "Payment Amount: 10 USDT",
+    "register.payNow": "Confirm",
+    "register.inputTitle": "Enter ID to Register",
+    "register.inputDesc":
+      "Please enter the ID you want to register (3-10 characters, alphanumeric only)",
+    "register.inputPlaceholder": "Enter ID (e.g., ABC123)",
+    "register.register": "Register",
+    "register.processing": "Processing...",
+    "register.success": "Registration Successful!",
+    "register.successDesc": "Your ID '{id}' has been successfully registered",
+    "register.failed": "Registration Failed",
+    "register.failedDesc":
+      "The ID '{id}' already exists, please try another one",
+    "register.invalidId": "Invalid ID format",
+    "register.invalidIdDesc":
+      "ID must be 3-10 characters and contain only letters and numbers",
+    "register.paymentSuccess": "Payment successful! You can now register an ID",
+    "register.cancel": "Cancel",
+    "register.close": "Close",
   },
   zh: {
     // Common
@@ -240,6 +265,27 @@ const locales: LocaleData = {
     "finance.balance": "当前余额",
     "finance.withdraw": "提现",
     "finance.records": "资金流水",
+
+    // Register ID
+    "register.title": "注册ID",
+    "register.paymentTitle": "需要支付费用",
+    "register.paymentDesc": "注册ID需要支付10 USDT注册费用",
+    "register.paymentAmount": "支付金额：10 USDT",
+    "register.payNow": "确定",
+    "register.inputTitle": "输入要注册的ID",
+    "register.inputDesc": "请输入您要注册的ID（3-10位字符，仅限字母和数字）",
+    "register.inputPlaceholder": "输入ID（如：ABC123）",
+    "register.register": "注册",
+    "register.processing": "处理中...",
+    "register.success": "注册成功！",
+    "register.successDesc": "您的ID '{id}' 已成功注册",
+    "register.failed": "注册失败",
+    "register.failedDesc": "ID '{id}' 已存在，请尝试其他ID",
+    "register.invalidId": "ID格式无效",
+    "register.invalidIdDesc": "ID必须是3-10位字符，且只能包含字母和数字",
+    "register.paymentSuccess": "支付成功！现在可以注册ID",
+    "register.cancel": "取消",
+    "register.close": "关闭",
   },
 };
 

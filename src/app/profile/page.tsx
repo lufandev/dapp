@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import Card from "@/components/ui/Card";
+import RegisterIDModal from "@/components/ui/RegisterIDModal";
 import { mockUser } from "@/data/mockData";
 import {
   FaWallet,
@@ -37,6 +38,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const { t, locale, setLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
+
+  // 模态框状态
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   // 轮播图状态
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -106,7 +110,7 @@ export default function ProfilePage() {
     {
       icon: <FaQrcode style={{ color: "var(--primary-color)" }} />,
       title: t("profile.registerID"),
-      onClick: () => alert(t("profile.registerID")),
+      onClick: () => setIsRegisterModalOpen(true),
     },
     {
       icon: <FaWallet style={{ color: "var(--primary-color)" }} />,
@@ -242,7 +246,7 @@ export default function ProfilePage() {
                   className="text-[1.125rem] font-[700]"
                   style={{ color: "var(--primary-color)" }}
                 >
-                  {mockUser.ownedNFTs.length}
+                  {mockUser.ownedValueIDs?.length || 0}
                 </div>
                 <div
                   className="text-[0.75rem] mt-[4px]"
@@ -264,7 +268,7 @@ export default function ProfilePage() {
                   className="text-[1.125rem] font-[700]"
                   style={{ color: "var(--primary-color)" }}
                 >
-                  {mockUser.rentedNFTs.length}
+                  {mockUser.rentedValueIDs?.length || 0}
                 </div>
                 <div
                   className="text-[0.75rem] mt-[4px]"
@@ -281,7 +285,7 @@ export default function ProfilePage() {
                   className="text-[1.125rem] font-[700]"
                   style={{ color: "var(--primary-color)" }}
                 >
-                  {mockUser.favoriteNFTs.length}
+                  {mockUser.favorites?.length || 0}
                 </div>
                 <div
                   className="text-[0.75rem] mt-[4px]"
@@ -418,6 +422,12 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      {/* 注册ID模态框 */}
+      <RegisterIDModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+      />
     </MobileLayout>
   );
 }
