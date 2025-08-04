@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import Card from "@/components/ui/Card";
 import RegisterIDModal from "@/components/ui/RegisterIDModal";
+import ContractAdmin from "@/components/ui/ContractAdmin";
 import { mockUser } from "@/data/mockData";
 import {
   FaWallet,
@@ -181,6 +182,9 @@ export default function ProfilePage() {
   return (
     <MobileLayout>
       <div className="p-[16px] pb-[100px]">
+        {/* 合约管理功能 */}
+        <ContractAdmin />
+
         <div className="mb-[24px]">
           <Card
             className="p-[20px]"

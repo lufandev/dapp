@@ -18,11 +18,11 @@ contract NFTRental is ReentrancyGuard {
 
     // 租赁信息结构体
     struct RentInfo {
-        address lender;       // 出租人地址
-        address renter;       // 承租人地址
-        uint256 endTime;      // 租赁结束时间戳
+        address lender; // 出租人地址
+        address renter; // 承租人地址
+        uint256 endTime; // 租赁结束时间戳
         address rentReceiver; // 租金接收地址
-        IERC20 payToken;      // 支付代币合约
+        IERC20 payToken; // 支付代币合约
     }
 
     // 租赁信息映射（tokenId => RentInfo）
@@ -87,7 +87,10 @@ contract NFTRental is ReentrancyGuard {
         address currentOwner
     ) external nonReentrant returns (address) {
         RentInfo storage info = rentInfo[tokenId];
-        require(info.endTime > 0 && block.timestamp >= info.endTime, "Not expired");
+        require(
+            info.endTime > 0 && block.timestamp >= info.endTime,
+            "Not expired"
+        );
         require(
             msg.sender == info.lender || msg.sender == info.renter,
             "Not authorized"
@@ -111,12 +114,14 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     Counters.Counter private _tokenIds; // Token ID计数器
 
     // 平台常量地址
-    address public constant PLATFORM = 0x3ac6D12628746E3E7c8a98f4188B7cf6e809F699;
+    address public constant PLATFORM =
+        0xFFe523C8CD17DE73068620f95eA6f0264D3d4749;
     address public owner; // 合约所有者
 
     // 支付代币设置
-    IERC20 public paymentToken = IERC20(0xdAC17F958D2ee523a2206206994597C13D831ec7); // 默认USDT
-    uint256 public registerFee = 10 * 10**6; // 注册费（默认10 USDT）
+    IERC20 public paymentToken =
+        IERC20(0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3); // 默认USDT
+    uint256 public registerFee = 10 * 10 ** 6; // 注册费（默认10 USDT）
     uint256 public feePercent = 5; // 平台手续费百分比
     uint256 public constant MAX_FEE = 10; // 最大手续费限制
 
@@ -126,9 +131,9 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
 
     // 出售信息结构体
     struct SaleInfo {
-        address seller;   // 出售人
-        uint256 price;    // 出售价格
-        IERC20 payToken;  // 支付代币
+        address seller; // 出售人
+        uint256 price; // 出售价格
+        IERC20 payToken; // 支付代币
         address receiver; // 收款地址
     }
 
@@ -137,22 +142,22 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
 
     // 平台绑定管理
     mapping(address => bool) public authorizedPlatforms; // 授权平台
-    mapping(uint256 => address) public platformOf;       // Token绑定的平台
+    mapping(uint256 => address) public platformOf; // Token绑定的平台
 
     // 支持的支付代币
     mapping(address => bool) public supportedTokens;
 
     // 租赁合约实例
     NFTRental public rentalContract;
-    
+
     // === 修饰符 ===
-    
+
     // 仅合约所有者修饰符
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
     }
-    
+
     /**
      * @dev 检查NFT是否未出租的修饰符
      * @param tokenId 要检查的NFT ID
@@ -166,13 +171,13 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     constructor() ERC721("NFT", "NFT") {
         owner = msg.sender;
         supportedTokens[address(paymentToken)] = true;
-        
+
         // 部署租赁合约
         rentalContract = new NFTRental(address(this));
     }
 
     // ========== 管理功能 ==========
-    
+
     /**
      * @dev 设置注册费
      * @param fee 新的注册费
@@ -217,36 +222,47 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     }
 
     // ========== NFT注册功能 ==========
-    
+
     /**
      * @dev 注册新NFT
      * @param id 基础ID字符串
      * @return tokenId 新生成的NFT ID
      */
-    function register(string calldata id) external nonReentrant returns (uint256 tokenId) {
+    function register(
+        string calldata id
+    ) external nonReentrant returns (uint256 tokenId) {
         bytes memory idBytes = bytes(id);
-        require(idBytes.length >= 3 && idBytes.length <= 10, "ID length must be 3~10");
-        
+        require(
+            idBytes.length >= 3 && idBytes.length <= 10,
+            "ID length must be 3~10"
+        );
+
         // 检查ID是否为字母数字组合
         for (uint i = 0; i < idBytes.length; i++) {
             bytes1 char = idBytes[i];
             require(
                 (char >= 0x30 && char <= 0x39) || // 0-9
-                (char >= 0x41 && char <= 0x5A) || // A-Z
-                (char >= 0x61 && char <= 0x7A),   // a-z
+                    (char >= 0x41 && char <= 0x5A) || // A-Z
+                    (char >= 0x61 && char <= 0x7A), // a-z
                 "ID must be alphanumeric"
             );
         }
 
         // 检查ID注册次数
         require(idRegistrationCount[id] < 50, "Max 50 registrations per ID");
-        
+
         // 转移注册费
         paymentToken.safeTransferFrom(msg.sender, PLATFORM, registerFee);
 
         // 生成唯一ID
         idRegistrationCount[id]++;
-        string memory finalID = string(abi.encodePacked(id, "-", uint256(idRegistrationCount[id]).toString()));
+        string memory finalID = string(
+            abi.encodePacked(
+                id,
+                "-",
+                uint256(idRegistrationCount[id]).toString()
+            )
+        );
 
         // 铸造NFT
         uint256 newItemId = _tokenIds.current();
@@ -259,7 +275,7 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     }
 
     // ========== NFT出售功能 ==========
-    
+
     /**
      * @dev 列出NFT出售
      * @param tokenId NFT ID
@@ -317,7 +333,7 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     }
 
     // ========== NFT租赁功能 ==========
-    
+
     /**
      * @dev 租赁NFT
      * @param tokenId NFT ID
@@ -369,8 +385,11 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
      */
     function claimExpiredRental(uint256 tokenId) external nonReentrant {
         // 通过租赁合约处理收回逻辑
-        address newOwner = rentalContract.claimExpiredRental(tokenId, ownerOf(tokenId));
-        
+        address newOwner = rentalContract.claimExpiredRental(
+            tokenId,
+            ownerOf(tokenId)
+        );
+
         // 转移NFT回物主
         _transfer(ownerOf(tokenId), newOwner, tokenId);
     }
@@ -399,7 +418,7 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
         require(authorizedPlatforms[platform], "Not authorized");
         authorizedPlatforms[platform] = false;
         emit PlatformDeauthorized(platform);
-        
+
         // 解除所有绑定该平台的NFT
         for (uint256 i = 0; i < _tokenIds.current(); i++) {
             if (platformOf[i] == platform) {
@@ -423,30 +442,30 @@ contract NFT is ERC721URIStorage, ERC721Enumerable, ReentrancyGuard {
     }
 
     // ========== 兼容性重写 ==========
-    function _increaseBalance(address account, uint128 value)
-        internal override(ERC721, ERC721Enumerable)
-    {
+    function _increaseBalance(
+        address account,
+        uint128 value
+    ) internal override(ERC721, ERC721Enumerable) {
         super._increaseBalance(account, value);
     }
 
-    function _update(address to, uint256 tokenId, address auth)
-        internal override(ERC721, ERC721Enumerable)
-        returns (address)
-    {
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override(ERC721, ERC721Enumerable) returns (address) {
         return super._update(to, tokenId, auth);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public view override(ERC721URIStorage, ERC721Enumerable)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721URIStorage, ERC721Enumerable) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 
-    function tokenURI(uint256 tokenId)
-        public view override(ERC721, ERC721URIStorage)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
     }
 }
