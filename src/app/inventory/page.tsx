@@ -70,40 +70,9 @@ export default function InventoryPage() {
             <div className="text-sm text-gray-500">
               {t("inventory.total", { count: ownedValueIDs.length })}
             </div>
-            <div className="flex gap-3">
-              {/* <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-                onClick={() => alert("筛选功能")}
-              >
-                <FaEllipsisH />
-                <span>{t("inventory.filter")}</span>
-              </Button> */}
-            </div>
           </div>
           {ownedValueIDs.length > 0 ? (
-            <>
-              {/* <div className="flex gap-4 mb-6">
-                <Button
-                  variant="primary"
-                  className="flex-1 flex items-center justify-center gap-2"
-                  onClick={() => alert("出售功能")}
-                >
-                  <FaPlus />
-                  <span>{t("inventory.sell")}</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 flex items-center justify-center gap-2"
-                  onClick={() => alert("出租功能")}
-                >
-                  <FaPlus />
-                  <span>{t("inventory.rent")}</span>
-                </Button>
-              </div> */}
-              {renderValueIDGrid(ownedValueIDs, "inventory")}
-            </>
+            renderValueIDGrid(ownedValueIDs, "inventory")
           ) : (
             <div className="text-center py-8 text-gray-500">
               {t("inventory.noOwned")}
@@ -128,15 +97,6 @@ export default function InventoryPage() {
             <div className="text-sm text-gray-500">
               {t("inventory.total", { count: rentedValueIDs.length })}
             </div>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-              onClick={() => alert("筛选功能")}
-            >
-              <FaEllipsisH />
-              <span>{t("inventory.filter")}</span>
-            </Button> */}
           </div>
           {rentedValueIDs.length > 0 ? (
             renderValueIDGrid(rentedValueIDs, "inventory")

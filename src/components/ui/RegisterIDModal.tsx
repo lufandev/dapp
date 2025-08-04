@@ -20,8 +20,8 @@ type Step = "payment" | "input" | "processing" | "success" | "failed" | "error";
 const CONTRACT_ADDRESS = "0xf27b70557f83956823c3174bf7955660b7c13a4d";
 
 // Sepolia 测试网配置
+// Sepolia 测试网配置
 const SEPOLIA_CHAIN_ID = "0xaa36a7"; // 11155111 in hex
-const SEPOLIA_USDT_ADDRESS = "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3"; // Sepolia USDT
 
 // 合约 ABI - 只包含需要的函数
 const CONTRACT_ABI = [
@@ -50,37 +50,6 @@ const CONTRACT_ABI = [
     inputs: [{ internalType: "string", name: "", type: "string" }],
     name: "idRegistrationCount",
     outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
-
-// ERC20 Token ABI - 用于 USDT 交互
-const ERC20_ABI = [
-  {
-    inputs: [
-      { internalType: "address", name: "spender", type: "address" },
-      { internalType: "uint256", name: "amount", type: "uint256" },
-    ],
-    name: "approve",
-    outputs: [{ internalType: "bool", name: "", type: "bool" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "owner", type: "address" },
-      { internalType: "address", name: "spender", type: "address" },
-    ],
-    name: "allowance",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "address", name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
