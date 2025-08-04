@@ -46,13 +46,9 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
     return regex.test(inputId);
   };
 
-  // 处理支付
-  const handlePayment = () => {
-    // 模拟支付过程
-    setStep("processing");
-    setTimeout(() => {
-      setStep("input");
-    }, 1500);
+  // 下一步
+  const handleNext = () => {
+    setStep("input");
   };
 
   // 处理注册
@@ -201,7 +197,7 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
             <Button variant="secondary" onClick={handleClose}>
               {t("register.cancel")}
             </Button>
-            <Button onClick={handlePayment}>{t("register.payNow")}</Button>
+            <Button onClick={handleNext}>{t("register.payNow")}</Button>
           </>
         );
 

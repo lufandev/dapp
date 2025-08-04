@@ -131,7 +131,7 @@ const locales: LocaleData = {
     "register.paymentDesc":
       "To register an ID, you need to pay 10 USDT registration fee",
     "register.paymentAmount": "Payment Amount: 10 USDT",
-    "register.payNow": "Confirm",
+    "register.payNow": "Next",
     "register.inputTitle": "Enter ID to Register",
     "register.inputDesc":
       "Please enter the ID you want to register (3-10 characters, alphanumeric only)",
@@ -271,7 +271,7 @@ const locales: LocaleData = {
     "register.paymentTitle": "需要支付费用",
     "register.paymentDesc": "注册ID需要支付10 USDT注册费用",
     "register.paymentAmount": "支付金额：10 USDT",
-    "register.payNow": "确定",
+    "register.payNow": "下一步",
     "register.inputTitle": "输入要注册的ID",
     "register.inputDesc": "请输入您要注册的ID（3-10位字符，仅限字母和数字）",
     "register.inputPlaceholder": "输入ID（如：ABC123）",
