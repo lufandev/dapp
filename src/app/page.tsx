@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import MobileLayout from "@/components/layout/MobileLayout";
 import SearchBar from "@/components/ui/SearchBar";
 import TabView from "@/components/ui/TabView";
@@ -11,13 +11,17 @@ import { useLocale } from "@/components/LocaleProvider";
 // import { useAuth } from "@/common/hooks";
 import { apiService } from "@/common/api";
 import { ValueID } from "@/types";
-import { ethers  } from "ethers";
-import { useFeedback } from "@/components/ui/Feedback";
-import {connect} from "@/common/connection-service"
+// import { ethers } from "ethers";
+// import { useFeedback } from "@/components/ui/Feedback";
+import {
+  connect,
+  getAllNFTsWithSaleInfo,
+  UserNFTAsset,
+} from "@/common/connection-service";
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
-  let isAuthenticated = false;
+  const isAuthenticated = false;
 
   // 状态管理
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,17 +35,68 @@ export default function Home() {
   const [latestLoading, setLatestLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const {toast} = useFeedback();
+  // 代币地址映射
+  const getTokenSymbol = useCallback((payTokenAddress: string): string => {
+    const tokenMap: Record<string, string> = {
+      "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3": "USDT", // 默认USDT地址
+      "0x0000000000000000000000000000000000000000": "ETH", // 零地址代表ETH
+    };
+
+    return tokenMap[payTokenAddress.toLowerCase()] || "UNKNOWN";
+  }, []);
+
+  // 将UserNFTAsset转换为ValueID格式
+  const convertNFTAssetToValueID = useCallback(
+    (asset: UserNFTAsset): ValueID => {
+      const saleInfo = asset.saleInfo;
+
+      return {
+        id: asset.tokenId,
+        name: asset.name,
+        description: `NFT with ID: ${asset.idString}`,
+        image: asset.image || "/images/nft1.jpg",
+        tokenId: asset.tokenId,
+        indexNumber: asset.tokenId,
+        price: saleInfo?.isForSale ? parseFloat(saleInfo.price) : 0, // 将wei转换为ether
+        paymentAddress: saleInfo?.receiver || "",
+        paymentCurrency: saleInfo?.payToken
+          ? getTokenSymbol(saleInfo.payToken)
+          : "ETH",
+        rarity: "common", // 默认稀有度
+        isForSale: saleInfo?.isForSale || false,
+        isForRent: false, // 默认不出租
+        rentalPrice: 0,
+        rentalPeriod: 0,
+        viewCount: 0,
+        favoriteCount: 0,
+        owner: {
+          id: 0,
+          username: "NFT所有者",
+        },
+        attributes: [],
+        createdAt: new Date().toISOString(),
+      };
+    },
+    [getTokenSymbol]
+  );
+
   // 加载数据
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getValueIDList({
-          isForSale: true,
-        });
-        setAllValueIDs(response.data);
+        console.log("🚀 开始从合约加载所有出售中的NFT...");
+
+        // 从合约获取所有有价格的NFT
+        const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
+
+        // 转换为ValueID格式
+        const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
+
+        console.log("🚀 转换后的ValueID数据:", valueIDs);
+        setAllValueIDs(valueIDs);
       } catch (err) {
+        console.error("🚀 加载合约数据失败:", err);
         setError(err instanceof Error ? err.message : "加载失败");
       } finally {
         setLoading(false);
@@ -51,15 +106,21 @@ export default function Home() {
     const loadRecommended = async () => {
       try {
         setRecommendedLoading(true);
-        const response = await apiService.getValueIDList({
-          isForSale: true,
-          sortBy: "favoriteCount",
-          sortOrder: "DESC",
-          limit: 20,
-        });
-        setRecommendedValueIDs(response.data);
+        console.log("🚀 开始从合约加载推荐NFT...");
+
+        // 从合约获取所有有价格的NFT
+        const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
+
+        // 转换为ValueID格式并按收藏数排序（这里暂时随机排序，可以后续改进）
+        const valueIDs = nftsWithSaleInfo
+          .map(convertNFTAssetToValueID)
+          .sort(() => Math.random() - 0.5) // 暂时随机排序作为推荐
+          .slice(0, 20); // 限制20个
+
+        setRecommendedValueIDs(valueIDs);
       } catch (err) {
-        console.error("加载推荐数据失败:", err);
+        console.error("🚀 加载推荐数据失败:", err);
+        setRecommendedValueIDs([]);
       } finally {
         setRecommendedLoading(false);
       }
@@ -68,15 +129,21 @@ export default function Home() {
     const loadLatest = async () => {
       try {
         setLatestLoading(true);
-        const response = await apiService.getValueIDList({
-          isForSale: true,
-          sortBy: "createdAt",
-          sortOrder: "DESC",
-          limit: 20,
-        });
-        setLatestValueIDs(response.data);
+        console.log("🚀 开始从合约加载最新NFT...");
+
+        // 从合约获取所有有价格的NFT
+        const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
+
+        // 转换为ValueID格式并按tokenId倒序排序（新的NFT通常有更大的tokenId）
+        const valueIDs = nftsWithSaleInfo
+          .map(convertNFTAssetToValueID)
+          .sort((a, b) => parseInt(b.tokenId) - parseInt(a.tokenId))
+          .slice(0, 20); // 限制20个
+
+        setLatestValueIDs(valueIDs);
       } catch (err) {
-        console.error("加载最新数据失败:", err);
+        console.error("🚀 加载最新数据失败:", err);
+        setLatestValueIDs([]);
       } finally {
         setLatestLoading(false);
       }
@@ -85,7 +152,7 @@ export default function Home() {
     loadData();
     loadRecommended();
     loadLatest();
-  }, []);
+  }, [convertNFTAssetToValueID]);
 
   // 搜索处理
   const handleSearch = async (query: string) => {
@@ -115,11 +182,17 @@ export default function Home() {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getValueIDList({
-        isForSale: true,
-      });
-      setAllValueIDs(response.data);
+      console.log("🚀 刷新合约数据...");
+
+      // 从合约获取所有有价格的NFT
+      const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
+
+      // 转换为ValueID格式
+      const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
+
+      setAllValueIDs(valueIDs);
     } catch (err) {
+      console.error("🚀 刷新合约数据失败:", err);
       setError(err instanceof Error ? err.message : "刷新失败");
     } finally {
       setLoading(false);
@@ -255,16 +328,16 @@ export default function Home() {
               // if (isAuthenticated) {
               //   toast.success("钱包已连接");
               // } else {
-                // toast.info(t("common.connectWallet") || "连接钱包");
-                // const provider = new ethers.providers.Web3Provider(
-                //   window.ethereum
-                // );  
-                // await provider.send("eth_requestAccounts", []);
-                // const signer = provider.getSigner();
-                // console.log(signer);
-                // const address = await signer.getAddress();
-                // console.log(address);
-                // isAuthenticated = true;
+              // toast.info(t("common.connectWallet") || "连接钱包");
+              // const provider = new ethers.providers.Web3Provider(
+              //   window.ethereum
+              // );
+              // await provider.send("eth_requestAccounts", []);
+              // const signer = provider.getSigner();
+              // console.log(signer);
+              // const address = await signer.getAddress();
+              // console.log(address);
+              // isAuthenticated = true;
               // }
             }}
           >

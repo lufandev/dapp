@@ -103,6 +103,27 @@ const NFT_CONTRACT_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "index", type: "uint256" }],
+    name: "tokenByIndex",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "ownerOf",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
 
 // NFT出售信息接口
@@ -254,6 +275,89 @@ export const getSaleInfo = async (tokenId: string): Promise<NFTSaleInfo> => {
       receiver: "0x0000000000000000000000000000000000000000",
       isForSale: false,
     };
+  }
+};
+
+/**
+ * 获取所有有价格的NFT（用于市场展示）
+ * @returns 所有正在出售的NFT资产列表
+ */
+export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
+  try {
+    const { provider } = await connectOnce();
+
+    console.log("🚀 开始获取所有NFT及出售信息...");
+
+    // 创建合约实例
+    const contract = new ethers.Contract(
+      NFT_CONTRACT_ADDRESS,
+      NFT_CONTRACT_ABI,
+      provider
+    );
+
+    // 获取总供应量
+    const totalSupply = await contract.totalSupply();
+    const totalSupplyNum = totalSupply.toNumber();
+
+    console.log("🚀 NFT总供应量:", totalSupplyNum);
+
+    if (totalSupplyNum === 0) {
+      return [];
+    }
+
+    // 获取所有NFT的详细信息
+    const nftsWithSaleInfo: UserNFTAsset[] = [];
+
+    for (let i = 0; i < totalSupplyNum; i++) {
+      try {
+        // 获取tokenId (通过索引)
+        const tokenId = await contract.tokenByIndex(i);
+        const tokenIdString = tokenId.toString();
+
+        console.log(`🚀 第${i + 1}个NFT - Token ID:`, tokenIdString);
+
+        // 获取出售信息
+        const saleInfo = await getSaleInfo(tokenIdString);
+
+        // 只处理有价格的NFT（正在出售的）
+        if (saleInfo.isForSale && parseFloat(saleInfo.price) > 0) {
+          // 获取NFT的其他信息
+          const idString = await contract.idOfToken(tokenId);
+          const tokenURI = await contract.tokenURI(tokenId);
+          const owner = await contract.ownerOf(tokenId);
+
+          console.log(
+            `🚀 出售中的NFT - ID: ${idString}, 价格: ${saleInfo.price}, 所有者: ${owner}`
+          );
+
+          // 构造NFT资产对象
+          const asset: UserNFTAsset = {
+            tokenId: tokenIdString,
+            name: idString || `NFT #${tokenIdString}`,
+            idString: idString,
+            tokenURI: tokenURI,
+            image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
+            saleInfo: saleInfo,
+          };
+
+          nftsWithSaleInfo.push(asset);
+        } else {
+          console.log(`🚀 跳过未出售的NFT - Token ID: ${tokenIdString}`);
+        }
+      } catch (error) {
+        console.error(`🚀 获取第${i + 1}个NFT信息失败:`, error);
+      }
+    }
+
+    console.log("🚀 获取所有出售中的NFT完成:", nftsWithSaleInfo);
+    return nftsWithSaleInfo;
+  } catch (error) {
+    console.error("🚀 获取所有NFT出售信息失败:", error);
+    globalFeedback.toast.error(
+      "获取市场数据失败",
+      "无法获取市场上的NFT信息，请检查网络连接"
+    );
+    return [];
   }
 };
 
