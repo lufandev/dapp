@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import TabView from "@/components/ui/TabView";
@@ -21,33 +21,50 @@ export default function InventoryPage() {
   const [favoriteValueIDs, setFavoriteValueIDs] = useState<ValueID[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 将UserNFTAsset转换为ValueID格式
-  const convertNFTAssetToValueID = (asset: UserNFTAsset): ValueID => {
-    return {
-      id: asset.tokenId,
-      name: asset.name,
-      description: `NFT with ID: ${asset.idString}`,
-      image: asset.image || "/images/nft1.jpg",
-      tokenId: asset.tokenId,
-      indexNumber: asset.tokenId,
-      price: 0, // NFT本身不出售，价格为0
-      paymentAddress: "",
-      paymentCurrency: "USDT",
-      rarity: "common", // 默认稀有度
-      isForSale: false,
-      isForRent: false, // 默认不出租
-      rentalPrice: 0,
-      rentalPeriod: 0,
-      viewCount: 0,
-      favoriteCount: 0,
-      owner: {
-        id: 0,
-        username: "当前用户",
-      },
-      attributes: [],
-      createdAt: new Date().toISOString(),
+  // 代币地址映射
+  const getTokenSymbol = useCallback((payTokenAddress: string): string => {
+    const tokenMap: Record<string, string> = {
+      "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3": "USDT", // 默认USDT地址
+      "0x0000000000000000000000000000000000000000": "ETH", // 零地址代表ETH
     };
-  };
+
+    return tokenMap[payTokenAddress.toLowerCase()] || "UNKNOWN";
+  }, []);
+
+  // 将UserNFTAsset转换为ValueID格式
+  const convertNFTAssetToValueID = useCallback(
+    (asset: UserNFTAsset): ValueID => {
+      const saleInfo = asset.saleInfo;
+
+      return {
+        id: asset.tokenId,
+        name: asset.name,
+        description: `NFT with ID: ${asset.idString}`,
+        image: asset.image || "/images/nft1.jpg",
+        tokenId: asset.tokenId,
+        indexNumber: asset.tokenId,
+        price: saleInfo?.isForSale ? parseFloat(saleInfo.price) : 0, // 将wei转换为ether
+        paymentAddress: saleInfo?.receiver || "",
+        paymentCurrency: saleInfo?.payToken
+          ? getTokenSymbol(saleInfo.payToken)
+          : "ETH",
+        rarity: "common", // 默认稀有度
+        isForSale: saleInfo?.isForSale || false,
+        isForRent: false, // 默认不出租
+        rentalPrice: 0,
+        rentalPeriod: 0,
+        viewCount: 0,
+        favoriteCount: 0,
+        owner: {
+          id: 0,
+          username: "当前用户",
+        },
+        attributes: [],
+        createdAt: new Date().toISOString(),
+      };
+    },
+    [getTokenSymbol]
+  );
 
   useEffect(() => {
     const loadData = async () => {
@@ -79,7 +96,7 @@ export default function InventoryPage() {
       }
     };
     loadData();
-  }, []);
+  }, [convertNFTAssetToValueID]);
 
   const renderValueIDGrid = (
     valueIDs: ValueID[],

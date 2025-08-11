@@ -91,7 +91,28 @@ const NFT_CONTRACT_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "saleInfo",
+    outputs: [
+      { internalType: "address", name: "seller", type: "address" },
+      { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "address", name: "payToken", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
 ];
+
+// NFT出售信息接口
+export interface NFTSaleInfo {
+  seller: string;
+  price: string;
+  payToken: string;
+  receiver: string;
+  isForSale: boolean;
+}
 
 // 用户NFT资产接口
 export interface UserNFTAsset {
@@ -100,6 +121,7 @@ export interface UserNFTAsset {
   idString: string;
   tokenURI: string;
   image?: string;
+  saleInfo?: NFTSaleInfo;
 }
 
 /**
@@ -154,6 +176,9 @@ export const getUserNFTAssets = async (
 
         console.log(`🚀 NFT详情 - ID: ${idString}, URI: ${tokenURI}`);
 
+        // 获取出售信息
+        const saleInfo = await getSaleInfo(tokenIdString);
+
         // 构造NFT资产对象
         const asset: UserNFTAsset = {
           tokenId: tokenIdString,
@@ -161,6 +186,7 @@ export const getUserNFTAssets = async (
           idString: idString,
           tokenURI: tokenURI,
           image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
+          saleInfo: saleInfo,
         };
 
         assets.push(asset);
@@ -178,6 +204,56 @@ export const getUserNFTAssets = async (
       "无法获取您的NFT资产，请检查网络连接"
     );
     return [];
+  }
+};
+
+/**
+ * 获取NFT的出售信息
+ * @param tokenId NFT的token ID
+ * @returns NFT的出售信息
+ */
+export const getSaleInfo = async (tokenId: string): Promise<NFTSaleInfo> => {
+  try {
+    const { provider } = await connectOnce();
+
+    console.log("🚀 查询NFT出售信息, Token ID:", tokenId);
+
+    // 创建合约实例
+    const contract = new ethers.Contract(
+      NFT_CONTRACT_ADDRESS,
+      NFT_CONTRACT_ABI,
+      provider
+    );
+
+    // 调用saleInfo方法
+    const saleResult = await contract.saleInfo(tokenId);
+
+    console.log("🚀 合约返回的出售信息:", saleResult);
+
+    // 检查是否有出售信息（price大于0表示正在出售）
+    const price = saleResult.price.toString();
+    const isForSale = price !== "0";
+
+    const saleInfo: NFTSaleInfo = {
+      seller: saleResult.seller,
+      price: price,
+      payToken: saleResult.payToken,
+      receiver: saleResult.receiver,
+      isForSale: isForSale,
+    };
+
+    console.log("🚀 处理后的出售信息:", saleInfo);
+    return saleInfo;
+  } catch (error) {
+    console.error("🚀 获取NFT出售信息失败:", error);
+    // 返回默认的空出售信息
+    return {
+      seller: "0x0000000000000000000000000000000000000000",
+      price: "0",
+      payToken: "0x0000000000000000000000000000000000000000",
+      receiver: "0x0000000000000000000000000000000000000000",
+      isForSale: false,
+    };
   }
 };
 
