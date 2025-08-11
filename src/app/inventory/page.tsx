@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import TabView from "@/components/ui/TabView";
@@ -8,8 +8,10 @@ import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
 import { useLocale } from "@/components/LocaleProvider";
 import { ValueID } from "@/types";
-import { useState } from "react";
-import { apiService } from "@/common/api";
+import {
+  getCurrentUserNFTAssets,
+  UserNFTAsset,
+} from "@/common/connection-service";
 
 export default function InventoryPage() {
   const { t } = useLocale();
@@ -17,21 +19,64 @@ export default function InventoryPage() {
   const [ownedValueIDs, setOwnedValueIDs] = useState<ValueID[]>([]);
   const [rentedValueIDs, setRentedValueIDs] = useState<ValueID[]>([]);
   const [favoriteValueIDs, setFavoriteValueIDs] = useState<ValueID[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 将UserNFTAsset转换为ValueID格式
+  const convertNFTAssetToValueID = (asset: UserNFTAsset): ValueID => {
+    return {
+      id: asset.tokenId,
+      name: asset.name,
+      description: `NFT with ID: ${asset.idString}`,
+      image: asset.image || "/images/nft1.jpg",
+      tokenId: asset.tokenId,
+      indexNumber: asset.tokenId,
+      price: 0, // NFT本身不出售，价格为0
+      paymentAddress: "",
+      paymentCurrency: "USDT",
+      rarity: "common", // 默认稀有度
+      isForSale: false,
+      isForRent: false, // 默认不出租
+      rentalPrice: 0,
+      rentalPeriod: 0,
+      viewCount: 0,
+      favoriteCount: 0,
+      owner: {
+        id: 0,
+        username: "当前用户",
+      },
+      attributes: [],
+      createdAt: new Date().toISOString(),
+    };
+  };
 
   useEffect(() => {
     const loadData = async () => {
-      const [ownedResponse, rentedResponse, favoriteResponse] =
-        await Promise.all([
-          apiService.getCurrentUserValueIDs(),
-          apiService.getCurrentUserRentedValueIDs(),
-          apiService.getCurrentUserFavoriteValueIDs(),
-        ]);
-      console.log(ownedResponse, rentedResponse, favoriteResponse);
-      setOwnedValueIDs(ownedResponse.ownedValueIDs);
-      setRentedValueIDs(rentedResponse.rentedValueIDs);
-      setFavoriteValueIDs(
-        favoriteResponse.favorites.map((item) => item.valueID)
-      );
+      try {
+        setLoading(true);
+        console.log("🚀 开始加载用户NFT资产...");
+
+        // 获取用户持有的NFT
+        const userAssets = await getCurrentUserNFTAssets();
+        console.log("🚀 获取到的NFT资产:", userAssets);
+
+        // 转换为ValueID格式
+        const ownedAssets = userAssets.map(convertNFTAssetToValueID);
+        setOwnedValueIDs(ownedAssets);
+
+        // 暂时设置空的租赁和收藏列表（可以后续实现）
+        setRentedValueIDs([]);
+        setFavoriteValueIDs([]);
+
+        console.log("🚀 NFT资产加载完成:", ownedAssets);
+      } catch (error) {
+        console.error("🚀 加载NFT资产失败:", error);
+        // 发生错误时设置为空数组
+        setOwnedValueIDs([]);
+        setRentedValueIDs([]);
+        setFavoriteValueIDs([]);
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, []);
@@ -71,7 +116,11 @@ export default function InventoryPage() {
               {t("inventory.total", { count: ownedValueIDs.length })}
             </div>
           </div>
-          {ownedValueIDs.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              正在加载您的NFT资产...
+            </div>
+          ) : ownedValueIDs.length > 0 ? (
             renderValueIDGrid(ownedValueIDs, "inventory")
           ) : (
             <div className="text-center py-8 text-gray-500">
@@ -79,7 +128,7 @@ export default function InventoryPage() {
               <div className="mt-6">
                 <Button
                   variant="primary"
-                  onClick={() => alert(t("inventory.buy"))}
+                  onClick={() => router.push("/profile")}
                 >
                   {t("inventory.buy")}
                 </Button>

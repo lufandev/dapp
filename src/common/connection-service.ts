@@ -1,17 +1,18 @@
-/// <reference path="../types/ethereum.d.ts" />
 import { ethers } from "ethers";
 import { globalFeedback } from "@/components/ui/Feedback";
 import { configuration } from "../config/blockChain";
 
 export const connectOnce = async () => {
-  if (!window.ethereum) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(window as any).ethereum) {
     globalFeedback.toast.error(
       "钱包未安装",
       "请安装 MetaMask 或其他以太坊钱包"
     );
     throw new Error("以太坊钱包未安装");
   }
-  const provider = new ethers.providers.Web3Provider(window.ethereum);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const provider = new ethers.providers.Web3Provider((window as any).ethereum);
   await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
   const network = await provider.getNetwork();
@@ -38,16 +39,152 @@ export const connect = async () => {
   const { success } = await trying();
   if (success) return;
   const conf = configuration();
-  if (!window.ethereum) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(window as any).ethereum) {
     globalFeedback.toast.error(
       "钱包未安装",
       "请安装 MetaMask 或其他以太坊钱包"
     );
     return;
   }
-  await window.ethereum.request({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (window as any).ethereum.request({
     method: "wallet_addEthereumChain",
     params: conf.params,
   });
   await trying();
+};
+
+// NFT合约地址
+const NFT_CONTRACT_ADDRESS = "0xf27b70557f83956823c3174bf7955660b7c13a4d";
+
+// NFT合约ABI - 只包含需要的函数
+const NFT_CONTRACT_ABI = [
+  {
+    inputs: [{ internalType: "address", name: "owner", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "owner", type: "address" },
+      { internalType: "uint256", name: "index", type: "uint256" },
+    ],
+    name: "tokenOfOwnerByIndex",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
+    name: "tokenURI",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "idOfToken",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+// 用户NFT资产接口
+export interface UserNFTAsset {
+  tokenId: string;
+  name: string;
+  idString: string;
+  tokenURI: string;
+  image?: string;
+}
+
+/**
+ * 获取用户持有的所有NFT资产
+ * @param userAddress 用户地址
+ * @returns 用户的NFT资产列表
+ */
+export const getUserNFTAssets = async (
+  userAddress?: string
+): Promise<UserNFTAsset[]> => {
+  try {
+    const { provider, address } = await connectOnce();
+    const targetAddress = userAddress || address;
+
+    console.log("🚀 开始获取用户NFT资产");
+    console.log("🚀 用户地址:", targetAddress);
+    console.log("🚀 合约地址:", NFT_CONTRACT_ADDRESS);
+
+    // 创建合约实例
+    const contract = new ethers.Contract(
+      NFT_CONTRACT_ADDRESS,
+      NFT_CONTRACT_ABI,
+      provider
+    );
+
+    // 获取用户拥有的NFT数量
+    const balance = await contract.balanceOf(targetAddress);
+    const balanceNum = balance.toNumber();
+
+    console.log("🚀 用户拥有的NFT数量:", balanceNum);
+
+    if (balanceNum === 0) {
+      return [];
+    }
+
+    // 获取每个NFT的详细信息
+    const assets: UserNFTAsset[] = [];
+
+    for (let i = 0; i < balanceNum; i++) {
+      try {
+        // 获取tokenId
+        const tokenId = await contract.tokenOfOwnerByIndex(targetAddress, i);
+        const tokenIdString = tokenId.toString();
+
+        console.log(`🚀 第${i + 1}个NFT - Token ID:`, tokenIdString);
+
+        // 获取ID字符串
+        const idString = await contract.idOfToken(tokenId);
+
+        // 获取tokenURI
+        const tokenURI = await contract.tokenURI(tokenId);
+
+        console.log(`🚀 NFT详情 - ID: ${idString}, URI: ${tokenURI}`);
+
+        // 构造NFT资产对象
+        const asset: UserNFTAsset = {
+          tokenId: tokenIdString,
+          name: idString || `NFT #${tokenIdString}`,
+          idString: idString,
+          tokenURI: tokenURI,
+          image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
+        };
+
+        assets.push(asset);
+      } catch (error) {
+        console.error(`🚀 获取第${i + 1}个NFT信息失败:`, error);
+      }
+    }
+
+    console.log("🚀 获取NFT资产完成:", assets);
+    return assets;
+  } catch (error) {
+    console.error("🚀 获取用户NFT资产失败:", error);
+    globalFeedback.toast.error(
+      "获取资产失败",
+      "无法获取您的NFT资产，请检查网络连接"
+    );
+    return [];
+  }
+};
+
+/**
+ * 获取当前连接用户的NFT资产
+ * @returns 当前用户的NFT资产列表
+ */
+export const getCurrentUserNFTAssets = async (): Promise<UserNFTAsset[]> => {
+  return getUserNFTAssets();
 };

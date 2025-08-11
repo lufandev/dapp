@@ -55,14 +55,19 @@ export default function NFTDetailPage() {
   );
 
   // 检查ID是否属于当前用户
-  const isOwnedByUser = user?.ownedValueIDs?.some((item) => item.id === id);
+  const isOwnedByUser = user?.ownedValueIDs?.some(
+    (item) => item.id.toString() === id.toString()
+  );
+  console.log("🚀 ~ NFTDetailPage ~ isOwnedByUser:", isOwnedByUser, user, id);
 
   // 检查是否是租赁的ID
-  const isRentedByUser = user?.rentedValueIDs?.some((item) => item.id === id);
+  const isRentedByUser = user?.rentedValueIDs?.some(
+    (item) => item.id.toString() === id.toString()
+  );
 
   // 检查ID是否已收藏
   const [isFavorite, setIsFavorite] = useState(
-    user?.favorites?.some((item) => item.id === id)
+    user?.favorites?.some((item) => item.id.toString() === id.toString())
   );
 
   // 处理收藏/取消收藏
@@ -104,19 +109,19 @@ export default function NFTDetailPage() {
     if (confirmed) {
       toast.success(
         "出售成功",
-      t("sell.success", {
-        price: sellPrice,
-        currency: sellCurrency,
-        address: sellAddress as string,
-      })
-    );
-    setSellModalOpen(false);
+        t("sell.success", {
+          price: sellPrice,
+          currency: sellCurrency,
+          address: sellAddress as string,
+        })
+      );
+      setSellModalOpen(false);
     }
   };
 
   // 处理出租表单提交
   const handleRentSubmit = async () => {
-    const confirmed = await confirm({  
+    const confirmed = await confirm({
       title: "确认出租",
       message: `确认以 ${rentPrice} ${rentCurrency}/天的价格出租此NFT ${rentDuration}天吗？`,
       type: "info",
@@ -126,16 +131,16 @@ export default function NFTDetailPage() {
 
     if (confirmed) {
       toast.success(
-        "出租成功", 
-      t("rent.success", {
-        price: rentPrice,
-        currency: rentCurrency,
-        deposit: rentDeposit,
-        duration: rentDuration,
-        address: rentAddress as string,
-      })
-    );
-    setRentModalOpen(false);
+        "出租成功",
+        t("rent.success", {
+          price: rentPrice,
+          currency: rentCurrency,
+          deposit: rentDeposit,
+          duration: rentDuration,
+          address: rentAddress as string,
+        })
+      );
+      setRentModalOpen(false);
     }
   };
 
@@ -432,7 +437,9 @@ export default function NFTDetailPage() {
                   onClick={async () => {
                     const confirmed = await confirm({
                       title: "确认购买",
-                      message: `确认购买此NFT吗？价格：${valueId.price || 'N/A'}`,
+                      message: `确认购买此NFT吗？价格：${
+                        valueId.price || "N/A"
+                      }`,
                       type: "info",
                       confirmText: "确认购买",
                       cancelText: "取消",
@@ -452,7 +459,9 @@ export default function NFTDetailPage() {
                   onClick={async () => {
                     const confirmed = await confirm({
                       title: "确认租赁",
-                      message: `确认租赁此NFT吗？租金：${valueId.rentalPrice || 'N/A'}/天`,
+                      message: `确认租赁此NFT吗？租金：${
+                        valueId.rentalPrice || "N/A"
+                      }/天`,
                       type: "info",
                       confirmText: "确认租赁",
                       cancelText: "取消",
