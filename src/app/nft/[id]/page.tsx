@@ -2,7 +2,7 @@
 
 import React, { useState, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import MobileLayout from "@/components/layout/MobileLayout";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -29,18 +29,48 @@ export default function NFTDetailPage() {
   const { toast, confirm } = useFeedback();
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
-  // const valueId = (await apiService.getValueIDDetail(id)).data;
+  const fromList = searchParams.get("fromList");
+
   const [valueId, setValueId] = useState<ValueID | null>(null);
   const [user, setUser] = useState<User | null>(null);
+
   useEffect(() => {
     const loadData = async () => {
-      const response = await apiService.getValueIDDetail(id);
-      console.log(response);
-      setValueId(response);
+      // 检查是否从列表页面跳转过来，如果是，优先使用 sessionStorage 中的数据
+      if (fromList === "true") {
+        const storageKey = `nft_data_${id}`;
+        const cachedData = sessionStorage.getItem(storageKey);
+
+        if (cachedData) {
+          try {
+            const parsedData = JSON.parse(cachedData);
+            console.log("🚀 使用缓存的NFT数据:", parsedData);
+            setValueId(parsedData);
+
+            // 使用完后清理缓存
+            sessionStorage.removeItem(storageKey);
+            return;
+          } catch (error) {
+            console.error("🚀 解析缓存数据失败:", error);
+          }
+        }
+      }
+
+      // 如果没有缓存数据或不是从列表跳转，则请求接口
+      // try {
+      //   console.log("🚀 从接口获取NFT数据...");
+      //   const response = await apiService.getValueIDDetail(id);
+      //   console.log("🚀 接口返回数据:", response);
+      //   setValueId(response);
+      // } catch (error) {
+      //   console.error("🚀 获取NFT详情失败:", error);
+      // }
     };
     loadData();
-  }, [id]);
+  }, [id, fromList]);
+
   useEffect(() => {
     const loadData = async () => {
       const response = await apiService.getUserProfile(1);

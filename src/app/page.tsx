@@ -250,6 +250,7 @@ export default function Home() {
             rentalPrice={valueId.rentalPrice}
             paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
+            valueIDData={valueId} // 传递完整的 ValueID 数据
           />
         ))}
       </div>
@@ -292,6 +293,7 @@ export default function Home() {
             rentalPrice={valueId.rentalPrice}
             paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
+            valueIDData={valueId} // 传递完整的 ValueID 数据
           />
         ))}
       </div>

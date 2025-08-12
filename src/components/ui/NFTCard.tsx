@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Card from "./Card";
 import { useLocale } from "@/components/LocaleProvider";
+import { ValueID } from "@/types";
 
 interface ValueIDCardProps {
   id: string;
@@ -15,6 +16,7 @@ interface ValueIDCardProps {
   rentalPrice?: number;
   paymentCurrency?: string;
   displayMode?: "inventory" | "sale" | "rental"; // 显示模式：库存/出售/租赁
+  valueIDData?: ValueID; // 添加完整的 ValueID 数据
 }
 
 const ValueIDCard: React.FC<ValueIDCardProps> = ({
@@ -28,12 +30,23 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
   rentalPrice,
   paymentCurrency,
   displayMode = "sale", // 默认为出售模式
+  valueIDData, // 接收完整的 ValueID 数据
 }) => {
   const router = useRouter();
   const { t } = useLocale();
 
   const handleClick = () => {
-    router.push(`/nft/${id}`);
+    if (valueIDData) {
+      // 将完整的 NFT 数据存储到 sessionStorage
+      const storageKey = `nft_data_${id}`;
+      sessionStorage.setItem(storageKey, JSON.stringify(valueIDData));
+
+      // 导航到详情页并传递一个标记参数
+      router.push(`/nft/${id}?fromList=true`);
+    } else {
+      // 回退到原来的方式
+      router.push(`/nft/${id}`);
+    }
   };
 
   return (

@@ -30,7 +30,7 @@ export default function RentalPage() {
     setSearchResults(results.data);
   };
 
-  const renderValueIDGrid = (valueIDs: ReturnType<typeof getRentalNFTs>) => {
+  const renderValueIDGrid = (valueIDs: ValueID[]) => {
     return (
       <div className="grid grid-cols-2 gap-[16px] mb-[83px]">
         {valueIDs.map((valueId) => (
@@ -46,6 +46,7 @@ export default function RentalPage() {
             rentalPrice={valueId.rentalPrice}
             paymentCurrency={valueId.paymentCurrency}
             displayMode="rental"
+            valueIDData={valueId} // 传递完整的 ValueID 数据
           />
         ))}
       </div>
@@ -66,29 +67,12 @@ export default function RentalPage() {
           />
         </div>
 
-        {searchResults ? (
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-medium">
-                {t("common.searchResults")}
-              </h2>
-              <button
-                className="text-[#3b82f6] text-sm"
-                onClick={() => setSearchResults(null)}
-              >
-                {t("common.back")}
-              </button>
-            </div>
-            {searchResults.length > 0 ? (
-              renderValueIDGrid(searchResults)
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                {t("common.noResults")}
-              </div>
-            )}
-          </div>
+        {searchResults.length > 0 ? (
+          renderValueIDGrid(searchResults)
         ) : (
-          renderValueIDGrid(rentalNFTs)
+          <div className="text-center py-8 text-gray-500">
+            {t("common.noResults") || "暂无租赁数据"}
+          </div>
         )}
       </div>
     </MobileLayout>
