@@ -81,7 +81,7 @@ export interface ValueID {
   viewCount: number;
   favoriteCount: number;
   owner: {
-    id: number;
+    id: string;
     username: string;
   };
   attributes: ValueIDAttribute[];

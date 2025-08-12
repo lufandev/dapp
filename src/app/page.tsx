@@ -70,8 +70,8 @@ export default function Home() {
         viewCount: 0,
         favoriteCount: 0,
         owner: {
-          id: 0,
-          username: "NFT所有者",
+          id: asset.owner,
+          username: asset.owner,
         },
         attributes: [],
         createdAt: new Date().toISOString(),

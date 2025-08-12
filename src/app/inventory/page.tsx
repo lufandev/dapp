@@ -56,8 +56,8 @@ export default function InventoryPage() {
         viewCount: 0,
         favoriteCount: 0,
         owner: {
-          id: 0,
-          username: "当前用户",
+          id: asset.owner,
+          username: asset.owner,
         },
         attributes: [],
         createdAt: new Date().toISOString(),

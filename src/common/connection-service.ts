@@ -143,6 +143,7 @@ export interface UserNFTAsset {
   tokenURI: string;
   image?: string;
   saleInfo?: NFTSaleInfo;
+  owner: string;
 }
 
 /**
@@ -208,6 +209,7 @@ export const getUserNFTAssets = async (
           tokenURI: tokenURI,
           image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
           saleInfo: saleInfo,
+          owner: targetAddress,
         };
 
         assets.push(asset);
@@ -338,6 +340,7 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
             tokenURI: tokenURI,
             image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
             saleInfo: saleInfo,
+            owner: owner,
           };
 
           nftsWithSaleInfo.push(asset);

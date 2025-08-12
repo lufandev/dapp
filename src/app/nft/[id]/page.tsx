@@ -15,7 +15,7 @@ import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useFeedback } from "@/components/ui/Feedback";
 import { User, ValueID } from "@/types";
-
+import { connectOnce } from "@/common/connection-service";
 // 支付币种选项
 const currencyOptions = [
   { value: "ETH", label: "currency.eth" },
@@ -35,6 +35,7 @@ export default function NFTDetailPage() {
 
   const [valueId, setValueId] = useState<ValueID | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [userAddress, setUserAddress] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,6 +77,8 @@ export default function NFTDetailPage() {
       const response = await apiService.getUserProfile(1);
       setUser(response);
       console.log(response);
+      const { address } = await connectOnce();
+      setUserAddress(address);
     };
     loadData();
   }, []);
@@ -85,9 +88,11 @@ export default function NFTDetailPage() {
   );
 
   // 检查ID是否属于当前用户
-  const isOwnedByUser = user?.ownedValueIDs?.some(
-    (item) => item.id.toString() === id.toString()
-  );
+  const isOwnedByUser =
+    valueId &&
+    userAddress &&
+    (valueId.owner.id.toString().toLowerCase() === userAddress.toLowerCase() ||
+      valueId.owner.username.toLowerCase() === userAddress.toLowerCase());
   console.log("🚀 ~ NFTDetailPage ~ isOwnedByUser:", isOwnedByUser, user, id);
 
   // 检查是否是租赁的ID
@@ -146,6 +151,16 @@ export default function NFTDetailPage() {
         })
       );
       setSellModalOpen(false);
+      // 更新NFT状态为出售中
+      if (valueId) {
+        setValueId({
+          ...valueId,
+          isForSale: true,
+          price: parseFloat(sellPrice),
+          paymentCurrency: sellCurrency,
+          paymentAddress: sellAddress,
+        });
+      }
     }
   };
 
@@ -171,6 +186,52 @@ export default function NFTDetailPage() {
         })
       );
       setRentModalOpen(false);
+      // 更新NFT状态为出租中
+      if (valueId) {
+        setValueId({
+          ...valueId,
+          isForRent: true,
+          rentalPrice: parseFloat(rentPrice),
+        });
+      }
+    }
+  };
+
+  // 处理取消出售
+  const handleCancelSale = async () => {
+    const confirmed = await confirm({
+      title: t("nft.cancelSale"),
+      message: "确认要取消出售此NFT吗？",
+      type: "warning",
+      confirmText: "确认取消",
+      cancelText: "返回",
+    });
+
+    if (confirmed) {
+      toast.success("已取消出售");
+      // 更新NFT状态为非出售
+      if (valueId) {
+        setValueId({ ...valueId, isForSale: false, price: 0 });
+      }
+    }
+  };
+
+  // 处理取消出租
+  const handleCancelRent = async () => {
+    const confirmed = await confirm({
+      title: t("nft.cancelRent"),
+      message: "确认要取消出租此NFT吗？",
+      type: "warning",
+      confirmText: "确认取消",
+      cancelText: "返回",
+    });
+
+    if (confirmed) {
+      toast.success("已取消出租");
+      // 更新NFT状态为非出租
+      if (valueId) {
+        setValueId({ ...valueId, isForRent: false, rentalPrice: 0 });
+      }
     }
   };
 
@@ -420,31 +481,54 @@ export default function NFTDetailPage() {
           }}
         >
           {isOwnedByUser ? (
-            // 用户自己的ID，显示出售和出租按钮
+            // 用户自己的NFT
             <>
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => setSellModalOpen(true)}
-              >
-                {t("nft.sellNow")}
-              </Button>
-              <Button
-                variant="outline"
-                fullWidth
-                onClick={() => setRentModalOpen(true)}
-              >
-                {t("nft.rentOut")}
-              </Button>
+              {/* 出售按钮逻辑 */}
+              {!valueId.isForSale ? (
+                // 如果当前NFT不是出售状态，显示出售按钮
+                <Button
+                  variant="primary"
+                  fullWidth
+                  onClick={() => setSellModalOpen(true)}
+                >
+                  {t("nft.sellNow")}
+                </Button>
+              ) : (
+                // 如果当前NFT是出售状态，显示取消出售按钮
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={handleCancelSale}
+                >
+                  {t("nft.cancelSale")}
+                </Button>
+              )}
+
+              {/* 出租按钮逻辑 */}
+              {!valueId.isForRent ? (
+                // 如果当前NFT不是出租状态，显示出租按钮
+                <Button
+                  variant="outline"
+                  fullWidth
+                  onClick={() => setRentModalOpen(true)}
+                >
+                  {t("nft.rentOut")}
+                </Button>
+              ) : (
+                // 如果当前NFT是出租状态，显示取消出租按钮
+                <Button variant="outline" fullWidth onClick={handleCancelRent}>
+                  {t("nft.cancelRent")}
+                </Button>
+              )}
             </>
           ) : isRentedByUser ? (
-            // 用户租赁的ID，显示归还按钮
+            // 用户租赁的NFT，显示归还按钮
             <Button
               variant="primary"
               fullWidth
               onClick={async () => {
                 const confirmed = await confirm({
-                  title: "确认归还",
+                  title: t("nft.returnRental"),
                   message: "确认要归还此租赁的NFT吗？",
                   type: "info",
                   confirmText: "确认归还",
@@ -458,51 +542,108 @@ export default function NFTDetailPage() {
               {t("nft.returnRental")}
             </Button>
           ) : (
-            // 不是用户自己的ID，显示购买和租赁按钮
+            // 不是用户自己的NFT
             <>
-              {valueId.isForSale && (
-                <Button
-                  variant="primary"
-                  fullWidth
-                  onClick={async () => {
-                    const confirmed = await confirm({
-                      title: "确认购买",
-                      message: `确认购买此NFT吗？价格：${
-                        valueId.price || "N/A"
-                      }`,
-                      type: "info",
-                      confirmText: "确认购买",
-                      cancelText: "取消",
-                    });
-                    if (confirmed) {
-                      toast.success("购买成功", t("nft.buyNow"));
-                    }
-                  }}
-                >
-                  {t("nft.buyNow")}
-                </Button>
-              )}
-              {valueId.isForRent && (
-                <Button
-                  variant="outline"
-                  fullWidth
-                  onClick={async () => {
-                    const confirmed = await confirm({
-                      title: "确认租赁",
-                      message: `确认租赁此NFT吗？租金：${
-                        valueId.rentalPrice || "N/A"
-                      }/天`,
-                      type: "info",
-                      confirmText: "确认租赁",
-                      cancelText: "取消",
-                    });
-                    if (confirmed) {
-                      toast.success("租赁成功", t("nft.rentNow"));
-                    }
-                  }}
-                >
-                  {t("nft.rentNow")}
-                </Button>
+              {/* 根据页面来源判断显示的按钮 */}
+              {fromList === "true" ? (
+                // 从列表页跳转过来，根据页面类型显示按钮
+                <>
+                  {/* 从首页（Value ID页面）跳转，表示是出售状态 */}
+                  {valueId.isForSale && (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t("nft.buyNow"),
+                          message: `确认购买此NFT吗？价格：${
+                            valueId.price || "N/A"
+                          } ${valueId.paymentCurrency || "ETH"}`,
+                          type: "info",
+                          confirmText: "确认购买",
+                          cancelText: "取消",
+                        });
+                        if (confirmed) {
+                          toast.success("购买成功", t("nft.buyNow"));
+                        }
+                      }}
+                    >
+                      {t("nft.buyNow")}
+                    </Button>
+                  )}
+
+                  {/* 从租赁页面跳转，表示是出租状态 */}
+                  {valueId.isForRent && (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t("nft.rentNow"),
+                          message: `确认租赁此NFT吗？租金：${
+                            valueId.rentalPrice || "N/A"
+                          } ${valueId.paymentCurrency || "ETH"}/天`,
+                          type: "info",
+                          confirmText: "确认租赁",
+                          cancelText: "取消",
+                        });
+                        if (confirmed) {
+                          toast.success("租赁成功", t("nft.rentNow"));
+                        }
+                      }}
+                    >
+                      {t("nft.rentNow")}
+                    </Button>
+                  )}
+                </>
+              ) : (
+                // 直接访问详情页，显示所有可用的操作按钮
+                <>
+                  {valueId.isForSale && (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t("nft.buyNow"),
+                          message: `确认购买此NFT吗？价格：${
+                            valueId.price || "N/A"
+                          } ${valueId.paymentCurrency || "ETH"}`,
+                          type: "info",
+                          confirmText: "确认购买",
+                          cancelText: "取消",
+                        });
+                        if (confirmed) {
+                          toast.success("购买成功", t("nft.buyNow"));
+                        }
+                      }}
+                    >
+                      {t("nft.buyNow")}
+                    </Button>
+                  )}
+                  {valueId.isForRent && (
+                    <Button
+                      variant="outline"
+                      fullWidth
+                      onClick={async () => {
+                        const confirmed = await confirm({
+                          title: t("nft.rentNow"),
+                          message: `确认租赁此NFT吗？租金：${
+                            valueId.rentalPrice || "N/A"
+                          } ${valueId.paymentCurrency || "ETH"}/天`,
+                          type: "info",
+                          confirmText: "确认租赁",
+                          cancelText: "取消",
+                        });
+                        if (confirmed) {
+                          toast.success("租赁成功", t("nft.rentNow"));
+                        }
+                      }}
+                    >
+                      {t("nft.rentNow")}
+                    </Button>
+                  )}
+                </>
               )}
             </>
           )}
