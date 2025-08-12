@@ -37,6 +37,28 @@ export default function NFTDetailPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
 
+  // 格式化价格显示，将wei转换为USDT
+  const formatPrice = (priceInWei: number): string => {
+    if (!priceInWei || priceInWei === 0) {
+      return "0.00";
+    }
+
+    try {
+      // 将价格从wei转换为USDT (18位小数)
+      const formattedPrice = ethers.utils.formatUnits(
+        priceInWei.toString(),
+        18
+      );
+      const numericPrice = parseFloat(formattedPrice);
+
+      // 保留两位小数
+      return numericPrice.toFixed(2);
+    } catch (error) {
+      console.error("价格格式化失败:", error);
+      return "0.00";
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       // 检查是否从列表页面跳转过来，如果是，优先使用 sessionStorage 中的数据
@@ -378,8 +400,8 @@ export default function NFTDetailPage() {
                   style={{ color: "var(--primary-color)" }}
                 >
                   {displayMode === "rental" && valueId.rentalPrice
-                    ? `$${Number(valueId.rentalPrice).toFixed(2)}`
-                    : `$${Number(valueId.price).toFixed(2)}`}
+                    ? `$${formatPrice(valueId.rentalPrice)}`
+                    : `$${formatPrice(valueId.price)}`}
                 </div>
               )}
             </div>
@@ -603,9 +625,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.buyNow"),
-                          message: `确认购买此NFT吗？价格：${
-                            valueId.price || "N/A"
-                          } ${valueId.paymentCurrency || "ETH"}`,
+                          message: `确认购买此NFT吗？价格：$${formatPrice(
+                            valueId.price
+                          )} USDT`,
                           type: "info",
                           confirmText: "确认购买",
                           cancelText: "取消",
@@ -627,9 +649,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.rentNow"),
-                          message: `确认租赁此NFT吗？租金：${
-                            valueId.rentalPrice || "N/A"
-                          } ${valueId.paymentCurrency || "ETH"}/天`,
+                          message: `确认租赁此NFT吗？租金：$${formatPrice(
+                            valueId.rentalPrice || 0
+                          )} USDT/天`,
                           type: "info",
                           confirmText: "确认租赁",
                           cancelText: "取消",
@@ -653,9 +675,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.buyNow"),
-                          message: `确认购买此NFT吗？价格：${
-                            valueId.price || "N/A"
-                          } ${valueId.paymentCurrency || "ETH"}`,
+                          message: `确认购买此NFT吗？价格：$${formatPrice(
+                            valueId.price
+                          )} USDT`,
                           type: "info",
                           confirmText: "确认购买",
                           cancelText: "取消",
@@ -675,9 +697,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.rentNow"),
-                          message: `确认租赁此NFT吗？租金：${
-                            valueId.rentalPrice || "N/A"
-                          } ${valueId.paymentCurrency || "ETH"}/天`,
+                          message: `确认租赁此NFT吗？租金：$${formatPrice(
+                            valueId.rentalPrice || 0
+                          )} USDT/天`,
                           type: "info",
                           confirmText: "确认租赁",
                           cancelText: "取消",
