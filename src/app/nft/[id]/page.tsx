@@ -19,6 +19,7 @@ import {
   connectOnce,
   listForSale,
   cancelSale,
+  buyNFT,
 } from "@/common/connection-service";
 import { ethers } from "ethers";
 // 支付币种选项 - 只支持USDT
@@ -633,7 +634,28 @@ export default function NFTDetailPage() {
                           cancelText: "取消",
                         });
                         if (confirmed) {
-                          toast.success("购买成功", t("nft.buyNow"));
+                          try {
+                            console.log("🚀 调用购买合约");
+                            console.log("🚀 参数:", {
+                              tokenId: valueId.tokenId,
+                            });
+
+                            // 调用合约的buy方法
+                            const txHash = await buyNFT(valueId.tokenId);
+
+                            console.log("🚀 购买交易哈希:", txHash);
+
+                            // 购买成功后，NFT应该不再处于出售状态
+                            // 注意：实际的NFT所有权转移需要从区块链获取最新状态
+                            setValueId({
+                              ...valueId,
+                              isForSale: false,
+                              price: 0,
+                            });
+                          } catch (error) {
+                            console.error("🚀 购买失败:", error);
+                            // 错误已经在buyNFT函数中处理了
+                          }
                         }
                       }}
                     >
@@ -683,7 +705,28 @@ export default function NFTDetailPage() {
                           cancelText: "取消",
                         });
                         if (confirmed) {
-                          toast.success("购买成功", t("nft.buyNow"));
+                          try {
+                            console.log("🚀 调用购买合约");
+                            console.log("🚀 参数:", {
+                              tokenId: valueId.tokenId,
+                            });
+
+                            // 调用合约的buy方法
+                            const txHash = await buyNFT(valueId.tokenId);
+
+                            console.log("🚀 购买交易哈希:", txHash);
+
+                            // 购买成功后，NFT应该不再处于出售状态
+                            // 注意：实际的NFT所有权转移需要从区块链获取最新状态
+                            setValueId({
+                              ...valueId,
+                              isForSale: false,
+                              price: 0,
+                            });
+                          } catch (error) {
+                            console.error("🚀 购买失败:", error);
+                            // 错误已经在buyNFT函数中处理了
+                          }
                         }
                       }}
                     >
