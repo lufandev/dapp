@@ -15,14 +15,10 @@ import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useFeedback } from "@/components/ui/Feedback";
 import { User, ValueID } from "@/types";
-import { connectOnce } from "@/common/connection-service";
-// 支付币种选项
-const currencyOptions = [
-  { value: "ETH", label: "currency.eth" },
-  { value: "CNY", label: "currency.cny" },
-  { value: "USDT", label: "currency.usdt" },
-  { value: "BTC", label: "currency.btc" },
-];
+import { connectOnce, listForSale } from "@/common/connection-service";
+import { ethers } from "ethers";
+// 支付币种选项 - 只支持USDT
+const currencyOptions = [{ value: "USDT", label: "currency.usdt" }];
 
 export default function NFTDetailPage() {
   const { t } = useLocale();
@@ -79,6 +75,7 @@ export default function NFTDetailPage() {
       console.log(response);
       const { address } = await connectOnce();
       setUserAddress(address);
+      setSellAddress(address); // 设置收款地址为当前用户钱包地址
     };
     loadData();
   }, []);
@@ -120,8 +117,8 @@ export default function NFTDetailPage() {
   // 出售弹框状态
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellPrice, setSellPrice] = useState("");
-  const [sellCurrency, setSellCurrency] = useState("ETH");
-  const [sellAddress, setSellAddress] = useState(user?.address);
+  const [sellCurrency, setSellCurrency] = useState("USDT");
+  const [sellAddress, setSellAddress] = useState("");
 
   // 出租弹框状态
   const [rentModalOpen, setRentModalOpen] = useState(false);
@@ -133,6 +130,16 @@ export default function NFTDetailPage() {
 
   // 处理出售表单提交
   const handleSellSubmit = async () => {
+    if (!sellPrice || parseFloat(sellPrice) <= 0) {
+      toast.error("错误", "请输入有效的价格");
+      return;
+    }
+
+    if (!sellAddress) {
+      toast.error("错误", "收款地址不能为空");
+      return;
+    }
+
     const confirmed = await confirm({
       title: "确认出售",
       message: `确认以 ${sellPrice} ${sellCurrency} 的价格出售此NFT吗？`,
@@ -141,18 +148,33 @@ export default function NFTDetailPage() {
       cancelText: "取消",
     });
 
-    if (confirmed) {
-      toast.success(
-        "出售成功",
-        t("sell.success", {
-          price: sellPrice,
-          currency: sellCurrency,
-          address: sellAddress as string,
-        })
-      );
-      setSellModalOpen(false);
-      // 更新NFT状态为出售中
-      if (valueId) {
+    if (confirmed && valueId) {
+      try {
+        // 将价格转换为wei（假设输入的是USDT，需要转换为18位小数）
+        const priceInWei = ethers.utils.parseUnits(sellPrice, 18);
+
+        // 固定的payToken地址（USDT）
+        const payTokenAddress = "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3";
+
+        console.log("🚀 调用挂售合约");
+        console.log("🚀 参数:", {
+          tokenId: valueId.tokenId,
+          price: priceInWei.toString(),
+          payToken: payTokenAddress,
+          receiver: sellAddress,
+        });
+
+        // 调用合约的listForSale方法
+        const txHash = await listForSale(
+          valueId.tokenId,
+          priceInWei.toString(),
+          payTokenAddress,
+          sellAddress
+        );
+
+        console.log("🚀 挂售交易哈希:", txHash);
+
+        // 更新NFT状态为出售中
         setValueId({
           ...valueId,
           isForSale: true,
@@ -160,6 +182,11 @@ export default function NFTDetailPage() {
           paymentCurrency: sellCurrency,
           paymentAddress: sellAddress,
         });
+
+        setSellModalOpen(false);
+      } catch (error) {
+        console.error("🚀 挂售失败:", error);
+        // 错误已经在listForSale函数中处理了
       }
     }
   };
@@ -695,8 +722,17 @@ export default function NFTDetailPage() {
               <Input
                 type="text"
                 value={sellAddress}
-                onChange={(e) => setSellAddress(e.target.value)}
+                readOnly
+                disabled
+                style={{
+                  backgroundColor: "var(--disabled-background, #f5f5f5)",
+                  color: "var(--disabled-color, #888)",
+                }}
+                placeholder="钱包地址加载中..."
               />
+              <div className="text-xs text-gray-500 mt-1">
+                收款地址为您当前连接的钱包地址
+              </div>
             </div>
             <div className="flex gap-[16px]">
               <Button

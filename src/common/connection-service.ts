@@ -124,6 +124,18 @@ const NFT_CONTRACT_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [
+      { internalType: "uint256", name: "tokenId", type: "uint256" },
+      { internalType: "uint256", name: "price", type: "uint256" },
+      { internalType: "address", name: "payToken", type: "address" },
+      { internalType: "address", name: "receiver", type: "address" },
+    ],
+    name: "listForSale",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
 // NFT出售信息接口
@@ -370,4 +382,68 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
  */
 export const getCurrentUserNFTAssets = async (): Promise<UserNFTAsset[]> => {
   return getUserNFTAssets();
+};
+
+/**
+ * 挂售NFT
+ * @param tokenId NFT的token ID
+ * @param price 价格（wei单位）
+ * @param payToken 支付代币地址
+ * @param receiver 收款地址
+ * @returns 交易哈希
+ */
+export const listForSale = async (
+  tokenId: string,
+  price: string,
+  payToken: string,
+  receiver: string
+): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+
+    console.log("🚀 开始挂售NFT");
+    console.log("🚀 参数:", { tokenId, price, payToken, receiver });
+
+    // 创建合约实例
+    const contract = new ethers.Contract(
+      NFT_CONTRACT_ADDRESS,
+      NFT_CONTRACT_ABI,
+      signer
+    );
+
+    // 调用listForSale方法
+    const tx = await contract.listForSale(tokenId, price, payToken, receiver);
+
+    console.log("🚀 交易已发送:", tx.hash);
+
+    globalFeedback.toast.info("交易已提交", "正在等待区块链确认...");
+
+    // 等待交易确认
+    const receipt = await tx.wait();
+
+    console.log("🚀 交易已确认:", receipt);
+
+    globalFeedback.toast.success(
+      "挂售成功",
+      `NFT已成功挂售，交易哈希: ${tx.hash.substring(0, 10)}...`
+    );
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 挂售NFT失败:", error);
+
+    let errorMessage = "挂售失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("user rejected")) {
+        errorMessage = "用户取消了交易";
+      } else if (error.message.includes("insufficient funds")) {
+        errorMessage = "余额不足，无法支付Gas费";
+      } else if (error.message.includes("execution reverted")) {
+        errorMessage = "合约执行失败，请检查NFT是否已挂售";
+      }
+    }
+
+    globalFeedback.toast.error("挂售失败", errorMessage);
+    throw error;
+  }
 };
