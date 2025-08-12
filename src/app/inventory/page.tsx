@@ -115,7 +115,6 @@ export default function InventoryPage() {
             rarity={valueId.rarity}
             isRental={valueId.isForRent}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency}
             displayMode={displayMode}
             valueIDData={valueId} // 传递完整的 ValueID 数据
           />

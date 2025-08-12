@@ -248,7 +248,6 @@ export default function Home() {
             rarity={valueId.rarity}
             isRental={valueId.isForRent}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
             valueIDData={valueId} // 传递完整的 ValueID 数据
           />
@@ -291,7 +290,6 @@ export default function Home() {
             rarity={valueId.rarity}
             isRental={valueId.isForRent}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency || "ETH"}
             displayMode="sale"
             valueIDData={valueId} // 传递完整的 ValueID 数据
           />

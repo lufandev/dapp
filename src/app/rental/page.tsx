@@ -44,7 +44,6 @@ export default function RentalPage() {
             rarity={valueId.rarity}
             isRental={true}
             rentalPrice={valueId.rentalPrice}
-            paymentCurrency={valueId.paymentCurrency}
             displayMode="rental"
             valueIDData={valueId} // 传递完整的 ValueID 数据
           />

@@ -15,7 +15,11 @@ import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useFeedback } from "@/components/ui/Feedback";
 import { User, ValueID } from "@/types";
-import { connectOnce, listForSale } from "@/common/connection-service";
+import {
+  connectOnce,
+  listForSale,
+  cancelSale,
+} from "@/common/connection-service";
 import { ethers } from "ethers";
 // 支付币种选项 - 只支持USDT
 const currencyOptions = [{ value: "USDT", label: "currency.usdt" }];
@@ -234,11 +238,27 @@ export default function NFTDetailPage() {
       cancelText: "返回",
     });
 
-    if (confirmed) {
-      toast.success("已取消出售");
-      // 更新NFT状态为非出售
-      if (valueId) {
-        setValueId({ ...valueId, isForSale: false, price: 0 });
+    if (confirmed && valueId) {
+      try {
+        console.log("🚀 调用取消挂售合约");
+        console.log("🚀 参数:", { tokenId: valueId.tokenId });
+
+        // 调用合约的cancelSale方法
+        const txHash = await cancelSale(valueId.tokenId);
+
+        console.log("🚀 取消挂售交易哈希:", txHash);
+
+        // 更新NFT状态为非出售
+        setValueId({
+          ...valueId,
+          isForSale: false,
+          price: 0,
+          paymentCurrency: "",
+          paymentAddress: "",
+        });
+      } catch (error) {
+        console.error("🚀 取消挂售失败:", error);
+        // 错误已经在cancelSale函数中处理了
       }
     }
   };
