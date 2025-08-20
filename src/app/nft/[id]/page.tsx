@@ -14,16 +14,16 @@ import Select from "@/components/ui/Select";
 import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useFeedback } from "@/components/ui/Feedback";
-import { User, ValueID } from "@/types";
+import { ValueID } from "@/types";
 import {
   connectOnce,
-  listForSale,
-  cancelSale,
-  buyNFT,
+  listNFTForSale,
+  cancelNFTSale,
+  buyNFTFromSale,
 } from "@/common/connection-service";
 import { ethers } from "ethers";
-// 支付币种选项 - 只支持USDT
-const currencyOptions = [{ value: "USDT", label: "currency.usdt" }];
+// 支付币种选项 - 只支持ETH
+const currencyOptions = [{ value: "ETH", label: "currency.eth" }];
 
 export default function NFTDetailPage() {
   const { t } = useLocale();
@@ -146,7 +146,7 @@ export default function NFTDetailPage() {
   // 出售弹框状态
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellPrice, setSellPrice] = useState("");
-  const [sellCurrency, setSellCurrency] = useState("USDT");
+  const [sellCurrency, setSellCurrency] = useState("ETH");
   const [sellAddress, setSellAddress] = useState("");
 
   // 出租弹框状态
@@ -171,7 +171,7 @@ export default function NFTDetailPage() {
 
     const confirmed = await confirm({
       title: "确认出售",
-      message: `确认以 ${sellPrice} ${sellCurrency} 的价格出售此NFT吗？`,
+      message: `确认以 ${sellPrice} ETH 的价格出售此NFT吗？`,
       type: "info",
       confirmText: "确认出售",
       cancelText: "取消",
@@ -179,26 +179,20 @@ export default function NFTDetailPage() {
 
     if (confirmed && valueId) {
       try {
-        // 将价格转换为wei（假设输入的是USDT，需要转换为18位小数）
-        const priceInWei = ethers.utils.parseUnits(sellPrice, 18);
+        // NFTSale合约使用ETH支付，将价格转换为wei
+        const priceInWei = ethers.utils.parseEther(sellPrice);
 
-        // 固定的payToken地址（USDT）
-        const payTokenAddress = "0x358AA13c52544ECCEF6B0ADD0f801012ADAD5eE3";
-
-        console.log("🚀 调用挂售合约");
+        console.log("🚀 调用NFTSale合约挂售");
         console.log("🚀 参数:", {
           tokenId: valueId.tokenId,
-          price: priceInWei.toString(),
-          payToken: payTokenAddress,
-          receiver: sellAddress,
+          priceInEth: sellPrice,
+          priceInWei: priceInWei.toString(),
         });
 
-        // 调用合约的listForSale方法
-        const txHash = await listForSale(
+        // 调用NFTSale合约的listForSale方法
+        const txHash = await listNFTForSale(
           valueId.tokenId,
-          priceInWei.toString(),
-          payTokenAddress,
-          sellAddress
+          sellPrice // 直接传入ETH价格字符串
         );
 
         console.log("🚀 挂售交易哈希:", txHash);
@@ -208,7 +202,7 @@ export default function NFTDetailPage() {
           ...valueId,
           isForSale: true,
           price: parseFloat(sellPrice),
-          paymentCurrency: sellCurrency,
+          paymentCurrency: "ETH",
           paymentAddress: sellAddress,
         });
 
@@ -268,8 +262,8 @@ export default function NFTDetailPage() {
         console.log("🚀 调用取消挂售合约");
         console.log("🚀 参数:", { tokenId: valueId.tokenId });
 
-        // 调用合约的cancelSale方法
-        const txHash = await cancelSale(valueId.tokenId);
+        // 调用NFTSale合约的cancelSale方法
+        const txHash = await cancelNFTSale(valueId.tokenId);
 
         console.log("🚀 取消挂售交易哈希:", txHash);
 
@@ -628,9 +622,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.buyNow"),
-                          message: `确认购买此NFT吗？价格：$${formatPrice(
+                          message: `确认购买此NFT吗？价格：${formatPrice(
                             valueId.price
-                          )} USDT`,
+                          )} ETH`,
                           type: "info",
                           confirmText: "确认购买",
                           cancelText: "取消",
@@ -643,7 +637,9 @@ export default function NFTDetailPage() {
                             });
 
                             // 调用合约的buy方法
-                            const txHash = await buyNFT(valueId.tokenId);
+                            const txHash = await buyNFTFromSale(
+                              valueId.tokenId
+                            );
 
                             console.log("🚀 购买交易哈希:", txHash);
 
@@ -699,9 +695,9 @@ export default function NFTDetailPage() {
                       onClick={async () => {
                         const confirmed = await confirm({
                           title: t("nft.buyNow"),
-                          message: `确认购买此NFT吗？价格：$${formatPrice(
+                          message: `确认购买此NFT吗？价格：${formatPrice(
                             valueId.price
-                          )} USDT`,
+                          )} ETH`,
                           type: "info",
                           confirmText: "确认购买",
                           cancelText: "取消",
@@ -714,7 +710,9 @@ export default function NFTDetailPage() {
                             });
 
                             // 调用合约的buy方法
-                            const txHash = await buyNFT(valueId.tokenId);
+                            const txHash = await buyNFTFromSale(
+                              valueId.tokenId
+                            );
 
                             console.log("🚀 购买交易哈希:", txHash);
 

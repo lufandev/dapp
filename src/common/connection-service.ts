@@ -7,17 +7,46 @@ import NFTCoreABI from "@/artifacts/NFTCore.json";
 import NFTSaleABI from "@/artifacts/NFTSale.json";
 import NFTRentalABI from "@/artifacts/NFTRental.json";
 
+// 类型定义
+interface EthereumProvider {
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  send: (method: string, params: unknown[]) => Promise<unknown>;
+}
+
+interface WindowWithEthereum extends Window {
+  ethereum?: EthereumProvider;
+}
+
+interface LogEvent {
+  args: {
+    user: string;
+    tokenId: ethers.BigNumber;
+    finalID: string;
+  };
+  blockNumber: number;
+  transactionHash: string;
+}
+
+interface TransactionEvent {
+  event: string;
+  args: {
+    tokenId: ethers.BigNumber;
+    [key: string]: unknown;
+  };
+}
+
 export const connectOnce = async () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!(window as any).ethereum) {
+  if (!(window as WindowWithEthereum).ethereum) {
     globalFeedback.toast.error(
       "钱包未安装",
       "请安装 MetaMask 或其他以太坊钱包"
     );
     throw new Error("以太坊钱包未安装");
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const provider = new ethers.providers.Web3Provider((window as any).ethereum);
+  const provider = new ethers.providers.Web3Provider(
+    (window as WindowWithEthereum)
+      .ethereum as unknown as ethers.providers.ExternalProvider
+  );
   await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
   const network = await provider.getNetwork();
@@ -44,16 +73,14 @@ export const connect = async () => {
   const { success } = await trying();
   if (success) return;
   const conf = configuration();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if (!(window as any).ethereum) {
+  if (!(window as WindowWithEthereum).ethereum) {
     globalFeedback.toast.error(
       "钱包未安装",
       "请安装 MetaMask 或其他以太坊钱包"
     );
     return;
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (window as any).ethereum.request({
+  await (window as WindowWithEthereum).ethereum!.request({
     method: "wallet_addEthereumChain",
     params: conf.params,
   });
@@ -229,7 +256,7 @@ export const getUserNFTAssets = async (
     for (let i = 0; i < logs.length; i++) {
       try {
         const log = logs[i];
-        const logEvent = log as any;
+        const logEvent = log as unknown as LogEvent;
 
         const tokenIdString = logEvent.args.tokenId.toString();
         const finalID = logEvent.args.finalID;
@@ -268,12 +295,36 @@ export const getUserNFTAssets = async (
 
         console.log(`🚀 NFT详情 - ID: ${finalID}, URI: ${tokenURI}`);
 
-        // 获取出售信息（如果有NFTSale合约）
-        let saleInfo: NFTSaleInfo | undefined;
+        // 获取出售信息（使用新的NFTSale合约）
+        let saleInfo: NFTSaleInfo;
         try {
-          saleInfo = await getNFTSaleInfo(tokenIdString);
+          const nftSaleInfo = await getNFTSaleInfo(tokenIdString);
+          if (nftSaleInfo) {
+            saleInfo = {
+              seller: nftSaleInfo.seller,
+              price: nftSaleInfo.price,
+              payToken: "0x0000000000000000000000000000000000000000", // ETH
+              receiver: nftSaleInfo.seller,
+              isForSale: true,
+            };
+          } else {
+            saleInfo = {
+              seller: "0x0000000000000000000000000000000000000000",
+              price: "0",
+              payToken: "0x0000000000000000000000000000000000000000",
+              receiver: "0x0000000000000000000000000000000000000000",
+              isForSale: false,
+            };
+          }
         } catch (error) {
           console.log(`🚀 无法获取NFT #${tokenIdString} 的出售信息:`, error);
+          saleInfo = {
+            seller: "0x0000000000000000000000000000000000000000",
+            price: "0",
+            payToken: "0x0000000000000000000000000000000000000000",
+            receiver: "0x0000000000000000000000000000000000000000",
+            isForSale: false,
+          };
         }
 
         // 构造NFT资产对象
@@ -662,7 +713,7 @@ export const registerNFT = async (
     let tokenId;
     if (receipt.events) {
       const registeredEvent = receipt.events.find(
-        (event: unknown) => (event as any).event === "Registered"
+        (event: unknown) => (event as TransactionEvent).event === "Registered"
       );
       if (registeredEvent) {
         tokenId = registeredEvent.args.tokenId.toString();
@@ -729,7 +780,7 @@ export const getUserRegisteredIDs = async (
     const logs = await contract.queryFilter(filter, 0, "latest");
 
     const registrations = logs.map((log: unknown) => {
-      const logEvent = log as any;
+      const logEvent = log as LogEvent;
       return {
         tokenId: logEvent.args.tokenId.toString(),
         finalID: logEvent.args.finalID,
@@ -799,9 +850,9 @@ export const listNFTForSale = async (
     );
 
     const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
-    const priceInWei = ethers.utils.parseEther(priceInEth);
+    // const priceInWei = ethers.utils.parseEther(priceInEth);
 
-    const tx = await contract.listForSale(tokenId, priceInWei);
+    const tx = await contract.listForSale(tokenId, priceInEth);
     console.log("🚀 交易已发送:", tx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -1250,60 +1301,3 @@ export const claimExpiredRental = async (tokenId: string): Promise<string> => {
     throw error;
   }
 };
-
-// 调试合约连接
-async function debugContract() {
-  try {
-    console.log("🔍 开始诊断合约连接...");
-
-    // 检查钱包连接
-    if (!window.ethereum) {
-      console.error("❌ 未检测到钱包");
-      return;
-    }
-
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    await provider.send("eth_requestAccounts", []);
-
-    const network = await provider.getNetwork();
-    console.log("🌐 当前网络:", network);
-    console.log("🔗 链ID:", network.chainId);
-
-    // 检查合约地址
-    const contractAddress = "0x7AbbC498Fda6a5c914021687bF81D3Cf16266977";
-    console.log("📋 合约地址:", contractAddress);
-
-    // 检查合约代码
-    const code = await provider.getCode(contractAddress);
-    console.log("📜 合约代码长度:", code.length);
-
-    if (code === "0x") {
-      console.error("❌ 合约未部署或地址错误");
-      return;
-    }
-
-    // 尝试调用简单函数
-    const contract = new ethers.Contract(
-      contractAddress,
-      [
-        {
-          inputs: [],
-          name: "registerFee",
-          outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-          stateMutability: "view",
-          type: "function",
-        },
-      ],
-      provider
-    );
-
-    console.log("🎯 尝试调用 registerFee...");
-    const fee = await contract.registerFee();
-    console.log("✅ 注册费用:", ethers.utils.formatEther(fee), "ETH");
-  } catch (error) {
-    console.error("❌ 诊断失败:", error);
-  }
-}
-
-// 运行诊断
-debugContract();
