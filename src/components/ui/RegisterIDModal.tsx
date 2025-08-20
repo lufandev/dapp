@@ -7,7 +7,7 @@ import Button from "./Button";
 import Input from "./Input";
 import { useLocale } from "../LocaleProvider";
 import { FaCheckCircle, FaExclamationCircle, FaSpinner } from "react-icons/fa";
-import { ethers } from "ethers";
+import { registerNFT } from "@/common/connection-service";
 
 interface RegisterIDModalProps {
   isOpen: boolean;
@@ -15,45 +15,6 @@ interface RegisterIDModalProps {
 }
 
 type Step = "payment" | "input" | "processing" | "success" | "failed" | "error";
-
-// 合约地址
-const CONTRACT_ADDRESS = "0xf27b70557f83956823c3174bf7955660b7c13a4d";
-
-// Sepolia 测试网配置
-// Sepolia 测试网配置
-const SEPOLIA_CHAIN_ID = "0xaa36a7"; // 11155111 in hex
-
-// 合约 ABI - 只包含需要的函数
-const CONTRACT_ABI = [
-  {
-    inputs: [{ internalType: "string", name: "id", type: "string" }],
-    name: "register",
-    outputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "registerFee",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "paymentToken",
-    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "string", name: "", type: "string" }],
-    name: "idRegistrationCount",
-    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
 
 const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
   isOpen,
@@ -90,76 +51,31 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
     return regex.test(inputId);
   };
 
-  // 检查并切换到Sepolia网络
-  const checkAndSwitchNetwork = async () => {
-    if (!(window as any).ethereum) {
-      throw new Error("请安装 MetaMask 钱包!");
-    }
-
-    const provider = new ethers.providers.Web3Provider(
-      (window as any).ethereum
-    );
-    const network = await provider.getNetwork();
-
-    if (network.chainId !== 11155111) {
-      try {
-        await (window as any).ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: SEPOLIA_CHAIN_ID }],
-        });
-      } catch (switchError: any) {
-        // 如果网络不存在，添加网络
-        if (switchError.code === 4902) {
-          await (window as any).ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: SEPOLIA_CHAIN_ID,
-                chainName: "Sepolia Test Network",
-                nativeCurrency: {
-                  name: "SepoliaETH",
-                  symbol: "ETH",
-                  decimals: 18,
-                },
-                rpcUrls: ["https://sepolia.infura.io/v3/"],
-                blockExplorerUrls: ["https://sepolia.etherscan.io/"],
-              },
-            ],
-          });
-        } else {
-          throw switchError;
-        }
-      }
-    }
-  };
-
-  // 处理支付
+  // 处理支付 - 简化版本，直接跳转到输入步骤
   const handlePayment = async () => {
     try {
       setStep("processing");
       setErrorMessage("");
 
+      // 检查钱包是否安装
       if (!(window as any).ethereum) {
         throw new Error("请安装 MetaMask 钱包!");
       }
 
-      await checkAndSwitchNetwork();
-
-      // 连接钱包
-      const provider = new ethers.providers.Web3Provider(
-        (window as any).ethereum
-      );
-      await provider.send("eth_requestAccounts", []);
+      // 尝试连接钱包
+      await (window as any).ethereum.request({
+        method: "eth_requestAccounts",
+      });
 
       setStep("input");
     } catch (error: any) {
-      console.error("支付失败:", error);
-      setErrorMessage(error.message || "支付失败，请重试");
+      console.error("连接钱包失败:", error);
+      setErrorMessage(error.message || "连接钱包失败，请重试");
       setStep("error");
     }
   };
 
-  // 处理注册 - 调用真实合约
+  // 处理注册 - 使用新的 registerNFT 函数
   const handleRegister = async () => {
     if (!validateId(id)) {
       alert(t("register.invalidIdDesc"));
@@ -171,111 +87,38 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       setRegisteredId(id);
       setErrorMessage("");
 
-      if (!(window as any).ethereum) {
-        throw new Error("请安装 MetaMask 钱包!");
-      }
-
-      await checkAndSwitchNetwork();
-
-      const provider = new ethers.providers.Web3Provider(
-        (window as any).ethereum
-      );
-      const signer = provider.getSigner();
-      const userAddress = await signer.getAddress();
-
-      // 创建合约实例
-      const contract = new ethers.Contract(
-        CONTRACT_ADDRESS,
-        CONTRACT_ABI,
-        signer
-      );
-
       console.log("🚀 开始注册流程");
-      console.log("🚀 用户地址:", userAddress);
       console.log("🚀 注册ID:", id.toLowerCase());
 
-      // 检查ID是否已被注册
-      const registrationCount = await contract.idRegistrationCount(
-        id.toLowerCase()
-      );
-      console.log("🚀 ID注册次数:", registrationCount.toString());
+      // 调用集成的注册函数
+      const result = await registerNFT(id.toLowerCase());
 
-      if (registrationCount >= 50) {
-        throw new Error(`ID "${id}" 已达到最大注册次数限制`);
+      console.log("🚀 注册成功!");
+      console.log("🚀 交易哈希:", result.txHash);
+      console.log("🚀 Token ID:", result.tokenId);
+
+      setTransactionHash(result.txHash);
+      if (result.tokenId) {
+        setTokenId(parseInt(result.tokenId));
       }
 
-      // 获取注册费和支付代币
-      const registerFee = await contract.registerFee();
-      const paymentTokenAddress = await contract.paymentToken();
-
-      console.log(
-        "🚀 注册费用:",
-        ethers.utils.formatUnits(registerFee, 6),
-        "USDT"
-      );
-      console.log("🚀 支付代币地址:", paymentTokenAddress);
-
-      // 调用注册函数
-      console.log("🚀 开始调用合约注册函数...");
-      const tx = await contract.register(id.toLowerCase());
-
-      console.log("🚀 注册交易已提交");
-      console.log("🚀 交易哈希:", tx.hash);
-      setTransactionHash(tx.hash);
-
-      // 等待交易确认
-      console.log("🚀 等待交易确认...");
-      const receipt = await tx.wait();
-      console.log("🚀 交易已确认");
-      console.log("🚀 交易收据:", receipt);
-
-      if (receipt.status === 1) {
-        // 从交易日志中获取 tokenId
-        const logs = receipt.logs;
-        console.log("🚀 交易日志:", logs);
-
-        // 查找 Transfer 事件来获取 tokenId
-        for (const log of logs) {
-          try {
-            if (
-              log.topics[0] ===
-              ethers.utils.id("Transfer(address,address,uint256)")
-            ) {
-              const parsedLog = new ethers.utils.Interface([
-                "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
-              ]).parseLog(log);
-
-              if (parsedLog.args.from === ethers.constants.AddressZero) {
-                const newTokenId = parsedLog.args.tokenId.toNumber();
-                console.log("🚀 新生成的 Token ID:", newTokenId);
-                setTokenId(newTokenId);
-                break;
-              }
-            }
-          } catch {
-            // 忽略解析错误
-          }
-        }
-
-        console.log("🚀 注册成功!");
-        setStep("success");
-      } else {
-        throw new Error("交易失败");
-      }
+      setStep("success");
     } catch (error: any) {
       console.error("🚀 注册失败:", error);
 
       // 处理特定错误
       let errorMsg = error.message || "注册失败，请重试";
 
-      if (error.message?.includes("Max 50 registrations per ID")) {
-        errorMsg = `ID "${id}" 已达到最大注册次数限制`;
-      } else if (error.message?.includes("ID length must be 3~10")) {
+      if (error.message?.includes("ID长度必须在3-10个字符之间")) {
         errorMsg = "ID长度必须为3-10个字符";
-      } else if (error.message?.includes("ID must be alphanumeric")) {
+      } else if (error.message?.includes("ID只能包含字母和数字")) {
         errorMsg = "ID只能包含字母和数字";
-      } else if (error.code === 4001) {
+      } else if (error.message?.includes("该ID注册次数已达上限")) {
+        errorMsg = `ID "${id}" 已达到最大注册次数限制`;
+      } else if (error.message?.includes("用户取消")) {
         errorMsg = "用户取消了交易";
+      } else if (error.message?.includes("余额不足")) {
+        errorMsg = "余额不足，无法支付注册费用";
       }
 
       setErrorMessage(errorMsg);

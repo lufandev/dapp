@@ -1,6 +1,10 @@
 type NetworkConfiguration = {
   chainId: number;
   nftAddress: string;
+  // 新增三个合约地址
+  nftCoreAddress: string;
+  nftSaleAddress: string;
+  nftRentalAddress: string;
   params: {
     chainId: string;
     rpcUrls: string[];
@@ -19,6 +23,10 @@ const confs: NetworkConfiguration[] = [
     chainId: 0x7a69,
 
     nftAddress: "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    // TODO: 部署后更新这些地址
+    nftCoreAddress: "0x0000000000000000000000000000000000000000",
+    nftSaleAddress: "0x0000000000000000000000000000000000000000",
+    nftRentalAddress: "0x0000000000000000000000000000000000000000",
 
     params: [
       {
@@ -37,6 +45,10 @@ const confs: NetworkConfiguration[] = [
   {
     chainId: 0xaa36a7,
     nftAddress: "0xf27b70557f83956823c3174bf7955660b7c13a4d",
+    // TODO: 用你在Remix部署的实际地址替换这些
+    nftCoreAddress: "0x7AbbC498Fda6a5c914021687bF81D3Cf16266977",
+    nftSaleAddress: "0xf5346F9c1e54EfB920046850D2339bA0ca4ddD01",
+    nftRentalAddress: "0xcC510541196541322b7Ccb66dc3EFc08ba152B05",
 
     params: [
       {

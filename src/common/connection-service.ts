@@ -2,6 +2,11 @@ import { ethers } from "ethers";
 import { globalFeedback } from "@/components/ui/Feedback";
 import { configuration } from "../config/blockChain";
 
+// 导入新的合约ABI
+import NFTCoreABI from "@/artifacts/NFTCore.json";
+import NFTSaleABI from "@/artifacts/NFTSale.json";
+import NFTRentalABI from "@/artifacts/NFTRental.json";
+
 export const connectOnce = async () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (!(window as any).ethereum) {
@@ -55,8 +60,20 @@ export const connect = async () => {
   await trying();
 };
 
-// NFT合约地址
+// NFT合约地址 - 保持向后兼容
 const NFT_CONTRACT_ADDRESS = "0xf27b70557f83956823c3174bf7955660b7c13a4d";
+
+// 合约地址获取函数
+export const getContractAddresses = () => {
+  const config = configuration();
+  return {
+    nftCore: config.nftCoreAddress,
+    nftSale: config.nftSaleAddress,
+    nftRental: config.nftRentalAddress,
+    // 向后兼容
+    nft: config.nftAddress,
+  };
+};
 
 // NFT合约ABI - 只包含需要的函数
 const NFT_CONTRACT_ABI = [
@@ -573,3 +590,688 @@ export const buyNFT = async (tokenId: string): Promise<string> => {
     throw error;
   }
 };
+
+// ========== NFTCore 合约相关函数 ==========
+
+/**
+ * 注册新的ID并铸造NFT
+ * @param id 要注册的ID字符串
+ * @returns 交易哈希和新生成的tokenId
+ */
+export const registerNFT = async (
+  id: string
+): Promise<{ txHash: string; tokenId?: string }> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log("🚀 注册NFT - ID:", id);
+
+    const contract = new ethers.Contract(addresses.nftCore, NFTCoreABI, signer);
+
+    // 检查注册费用
+    const registerFee = await contract.registerFee();
+    const paymentToken = await contract.paymentToken();
+
+    console.log("🚀 注册费用:", ethers.utils.formatEther(registerFee));
+    console.log("🚀 支付代币:", paymentToken);
+
+    // 调用注册函数
+    const tx = await contract.register(id);
+    console.log("🚀 交易已发送:", tx.hash);
+
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    // 等待交易确认
+    const receipt = await tx.wait();
+    console.log("🚀 交易确认:", receipt);
+
+    // 从事件日志中获取tokenId
+    let tokenId;
+    if (receipt.events) {
+      const registeredEvent = receipt.events.find(
+        (event: unknown) => (event as any).event === "Registered"
+      );
+      if (registeredEvent) {
+        tokenId = registeredEvent.args.tokenId.toString();
+      }
+    }
+
+    globalFeedback.toast.success(
+      "注册成功",
+      `ID "${id}" 注册成功！${tokenId ? `Token ID: ${tokenId}` : ""}`
+    );
+
+    return { txHash: tx.hash, tokenId };
+  } catch (error) {
+    console.error("🚀 注册NFT失败:", error);
+
+    let errorMessage = "注册失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("ID length invalid")) {
+        errorMessage = "ID长度必须在3-10个字符之间";
+      } else if (error.message.includes("ID must be alphanumeric")) {
+        errorMessage = "ID只能包含字母和数字";
+      } else if (error.message.includes("ID max registration reached")) {
+        errorMessage = "该ID注册次数已达上限(50次)";
+      } else if (error.message.includes("insufficient funds")) {
+        errorMessage = "余额不足，无法支付注册费用";
+      }
+    }
+
+    globalFeedback.toast.error("注册失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 获取用户注册的所有ID
+ * @param userAddress 用户地址，不传则获取当前用户
+ * @returns 用户注册的ID列表
+ */
+export const getUserRegisteredIDs = async (
+  userAddress?: string
+): Promise<
+  {
+    tokenId: string;
+    finalID: string;
+    blockNumber: number;
+    transactionHash: string;
+  }[]
+> => {
+  try {
+    const { provider, address } = await connectOnce();
+    const addresses = getContractAddresses();
+    const targetAddress = userAddress || address;
+
+    console.log("🚀 获取用户注册的ID - 地址:", targetAddress);
+
+    const contract = new ethers.Contract(
+      addresses.nftCore,
+      NFTCoreABI,
+      provider
+    );
+
+    // 通过事件日志获取注册记录
+    const filter = contract.filters.Registered(targetAddress);
+    const logs = await contract.queryFilter(filter, 0, "latest");
+
+    const registrations = logs.map((log: unknown) => {
+      const logEvent = log as any;
+      return {
+        tokenId: logEvent.args.tokenId.toString(),
+        finalID: logEvent.args.finalID,
+        blockNumber: logEvent.blockNumber,
+        transactionHash: logEvent.transactionHash,
+      };
+    });
+
+    console.log(`🚀 找到 ${registrations.length} 条注册记录`);
+    return registrations;
+  } catch (error) {
+    console.error("🚀 获取用户注册ID失败:", error);
+    globalFeedback.toast.error("获取失败", "无法获取注册的ID列表");
+    return [];
+  }
+};
+
+/**
+ * 获取所有注册的ID（分页）
+ * @param offset 起始位置
+ * @param limit 数量限制
+ * @returns ID列表
+ */
+export const getAllRegisteredIDs = async (
+  offset: number = 0,
+  limit: number = 20
+): Promise<string[]> => {
+  try {
+    const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    const contract = new ethers.Contract(
+      addresses.nftCore,
+      NFTCoreABI,
+      provider
+    );
+    const ids = await contract.getIDsPaginated(offset, limit);
+
+    console.log(
+      `🚀 获取ID列表 - 偏移:${offset}, 限制:${limit}, 结果:${ids.length}条`
+    );
+    return ids;
+  } catch (error) {
+    console.error("🚀 获取ID列表失败:", error);
+    return [];
+  }
+};
+
+// ========== NFTSale 合约相关函数 ==========
+
+/**
+ * 上架NFT出售
+ * @param tokenId NFT的token ID
+ * @param priceInEth 价格（ETH单位）
+ * @returns 交易哈希
+ */
+export const listNFTForSale = async (
+  tokenId: string,
+  priceInEth: string
+): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(
+      `🚀 上架NFT出售 - Token ID: ${tokenId}, 价格: ${priceInEth} ETH`
+    );
+
+    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
+    const priceInWei = ethers.utils.parseEther(priceInEth);
+
+    const tx = await contract.listForSale(tokenId, priceInWei);
+    console.log("🚀 交易已发送:", tx.hash);
+
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success("上架成功", `NFT #${tokenId} 已成功上架！`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 上架NFT失败:", error);
+
+    let errorMessage = "上架失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not NFT owner")) {
+        errorMessage = "只有NFT拥有者才能上架出售";
+      } else if (error.message.includes("NFT is rented")) {
+        errorMessage = "NFT正在租赁中，无法出售";
+      } else if (error.message.includes("Price=0")) {
+        errorMessage = "价格必须大于0";
+      }
+    }
+
+    globalFeedback.toast.error("上架失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 购买NFT
+ * @param tokenId NFT的token ID
+ * @returns 交易哈希
+ */
+export const buyNFTFromSale = async (tokenId: string): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 购买NFT - Token ID: ${tokenId}`);
+
+    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
+
+    // 获取NFT价格
+    const saleInfo = await contract.sales(tokenId);
+    if (saleInfo.price.eq(0)) {
+      throw new Error("NFT未上架出售");
+    }
+
+    console.log("🚀 NFT价格:", ethers.utils.formatEther(saleInfo.price), "ETH");
+
+    const tx = await contract.buy(tokenId, {
+      value: saleInfo.price,
+    });
+
+    console.log("🚀 交易已发送:", tx.hash);
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success("购买成功", `NFT #${tokenId} 购买成功！`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 购买NFT失败:", error);
+
+    let errorMessage = "购买失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not for sale")) {
+        errorMessage = "NFT未上架出售";
+      } else if (error.message.includes("Insufficient payment")) {
+        errorMessage = "支付金额不足";
+      } else if (error.message.includes("NFT is rented")) {
+        errorMessage = "NFT正在租赁中，无法购买";
+      }
+    }
+
+    globalFeedback.toast.error("购买失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 取消NFT出售
+ * @param tokenId NFT的token ID
+ * @returns 交易哈希
+ */
+export const cancelNFTSale = async (tokenId: string): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 取消NFT出售 - Token ID: ${tokenId}`);
+
+    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
+    const tx = await contract.cancelSale(tokenId);
+
+    console.log("🚀 交易已发送:", tx.hash);
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success("取消成功", `NFT #${tokenId} 已取消出售！`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 取消NFT出售失败:", error);
+
+    let errorMessage = "取消失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not seller")) {
+        errorMessage = "只有卖家才能取消出售";
+      }
+    }
+
+    globalFeedback.toast.error("取消失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 获取NFT出售信息
+ * @param tokenId NFT的token ID
+ * @returns 出售信息
+ */
+export const getNFTSaleInfo = async (
+  tokenId: string
+): Promise<{
+  seller: string;
+  price: string;
+  priceInEth: string;
+} | null> => {
+  try {
+    const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    const contract = new ethers.Contract(
+      addresses.nftSale,
+      NFTSaleABI,
+      provider
+    );
+    const saleInfo = await contract.sales(tokenId);
+
+    if (saleInfo.price.eq(0)) {
+      return null; // 未上架出售
+    }
+
+    return {
+      seller: saleInfo.seller,
+      price: saleInfo.price.toString(),
+      priceInEth: ethers.utils.formatEther(saleInfo.price),
+    };
+  } catch (error) {
+    console.error("🚀 获取NFT出售信息失败:", error);
+    return null;
+  }
+};
+
+// ========== NFTRental 合约相关函数 ==========
+
+/**
+ * 上架NFT出租
+ * @param tokenId NFT的token ID
+ * @param pricePerDayInEth 每日租金（ETH单位）
+ * @param maxDays 最大租赁天数
+ * @returns 交易哈希
+ */
+export const listNFTForRent = async (
+  tokenId: string,
+  pricePerDayInEth: string,
+  maxDays: number
+): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(
+      `🚀 上架NFT出租 - Token ID: ${tokenId}, 每日租金: ${pricePerDayInEth} ETH, 最大天数: ${maxDays}`
+    );
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      signer
+    );
+    const pricePerDayInWei = ethers.utils.parseEther(pricePerDayInEth);
+
+    const tx = await contract.listForRent(tokenId, pricePerDayInWei, maxDays);
+    console.log("🚀 交易已发送:", tx.hash);
+
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success(
+      "上架成功",
+      `NFT #${tokenId} 已成功上架出租！`
+    );
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 上架NFT出租失败:", error);
+
+    let errorMessage = "上架失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not NFT owner")) {
+        errorMessage = "只有NFT拥有者才能上架出租";
+      } else if (error.message.includes("Already rented")) {
+        errorMessage = "NFT已在租赁中";
+      } else if (error.message.includes("PricePerDay=0")) {
+        errorMessage = "每日租金必须大于0";
+      } else if (error.message.includes("MaxDays=0")) {
+        errorMessage = "最大天数必须大于0";
+      }
+    }
+
+    globalFeedback.toast.error("上架失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 租赁NFT
+ * @param tokenId NFT的token ID
+ * @param daysCount 租赁天数
+ * @returns 交易哈希
+ */
+export const rentNFT = async (
+  tokenId: string,
+  daysCount: number
+): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 租赁NFT - Token ID: ${tokenId}, 天数: ${daysCount}`);
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      signer
+    );
+
+    // 获取租赁信息
+    const rentalInfo = await contract.rentals(tokenId);
+    if (rentalInfo.pricePerDay.eq(0)) {
+      throw new Error("NFT未上架出租");
+    }
+
+    const totalCost = rentalInfo.pricePerDay.mul(daysCount);
+    console.log("🚀 总租金:", ethers.utils.formatEther(totalCost), "ETH");
+
+    const tx = await contract.rentToken(tokenId, daysCount, {
+      value: totalCost,
+    });
+
+    console.log("🚀 交易已发送:", tx.hash);
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success(
+      "租赁成功",
+      `NFT #${tokenId} 租赁成功，租期 ${daysCount} 天！`
+    );
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 租赁NFT失败:", error);
+
+    let errorMessage = "租赁失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not for rent")) {
+        errorMessage = "NFT未上架出租";
+      } else if (error.message.includes("Invalid days")) {
+        errorMessage = "租赁天数无效";
+      } else if (error.message.includes("Already rented")) {
+        errorMessage = "NFT已被租赁";
+      } else if (error.message.includes("Insufficient payment")) {
+        errorMessage = "支付金额不足";
+      }
+    }
+
+    globalFeedback.toast.error("租赁失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 取消NFT出租
+ * @param tokenId NFT的token ID
+ * @returns 交易哈希
+ */
+export const cancelNFTRent = async (tokenId: string): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 取消NFT出租 - Token ID: ${tokenId}`);
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      signer
+    );
+    const tx = await contract.cancelRentOffer(tokenId);
+
+    console.log("🚀 交易已发送:", tx.hash);
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success("取消成功", `NFT #${tokenId} 已取消出租！`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 取消NFT出租失败:", error);
+
+    let errorMessage = "取消失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not lender")) {
+        errorMessage = "只有出租人才能取消出租";
+      }
+    }
+
+    globalFeedback.toast.error("取消失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
+ * 获取NFT租赁信息
+ * @param tokenId NFT的token ID
+ * @returns 租赁信息
+ */
+export const getNFTRentalInfo = async (
+  tokenId: string
+): Promise<{
+  lender: string;
+  pricePerDay: string;
+  pricePerDayInEth: string;
+  maxDays: number;
+} | null> => {
+  try {
+    const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      provider
+    );
+    const rentalInfo = await contract.rentals(tokenId);
+
+    if (rentalInfo.pricePerDay.eq(0)) {
+      return null; // 未上架出租
+    }
+
+    return {
+      lender: rentalInfo.lender,
+      pricePerDay: rentalInfo.pricePerDay.toString(),
+      pricePerDayInEth: ethers.utils.formatEther(rentalInfo.pricePerDay),
+      maxDays: rentalInfo.maxDays.toNumber(),
+    };
+  } catch (error) {
+    console.error("🚀 获取NFT租赁信息失败:", error);
+    return null;
+  }
+};
+
+/**
+ * 获取NFT活跃租赁信息
+ * @param tokenId NFT的token ID
+ * @returns 活跃租赁信息
+ */
+export const getNFTActiveRental = async (
+  tokenId: string
+): Promise<{
+  renter: string;
+  lender: string;
+  endTime: number;
+  isExpired: boolean;
+} | null> => {
+  try {
+    const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      provider
+    );
+    const activeRental = await contract.activeRentals(tokenId);
+
+    if (activeRental.renter === ethers.constants.AddressZero) {
+      return null; // 没有活跃租赁
+    }
+
+    const currentTime = Math.floor(Date.now() / 1000);
+    const endTime = activeRental.endTime.toNumber();
+
+    return {
+      renter: activeRental.renter,
+      lender: activeRental.lender,
+      endTime: endTime,
+      isExpired: currentTime > endTime,
+    };
+  } catch (error) {
+    console.error("🚀 获取NFT活跃租赁信息失败:", error);
+    return null;
+  }
+};
+
+/**
+ * 归还过期的租赁NFT
+ * @param tokenId NFT的token ID
+ * @returns 交易哈希
+ */
+export const claimExpiredRental = async (tokenId: string): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 归还过期租赁NFT - Token ID: ${tokenId}`);
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      NFTRentalABI,
+      signer
+    );
+    const tx = await contract.claimExpiredRental(tokenId);
+
+    console.log("🚀 交易已发送:", tx.hash);
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    globalFeedback.toast.success("归还成功", `NFT #${tokenId} 已成功归还！`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 归还过期租赁NFT失败:", error);
+
+    let errorMessage = "归还失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Not rented")) {
+        errorMessage = "NFT未在租赁中";
+      } else if (error.message.includes("Rental active")) {
+        errorMessage = "租期尚未到期";
+      }
+    }
+
+    globalFeedback.toast.error("归还失败", errorMessage);
+    throw error;
+  }
+};
+
+// 调试合约连接
+async function debugContract() {
+  try {
+    console.log("🔍 开始诊断合约连接...");
+
+    // 检查钱包连接
+    if (!window.ethereum) {
+      console.error("❌ 未检测到钱包");
+      return;
+    }
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+
+    const network = await provider.getNetwork();
+    console.log("🌐 当前网络:", network);
+    console.log("🔗 链ID:", network.chainId);
+
+    // 检查合约地址
+    const contractAddress = "0x7AbbC498Fda6a5c914021687bF81D3Cf16266977";
+    console.log("📋 合约地址:", contractAddress);
+
+    // 检查合约代码
+    const code = await provider.getCode(contractAddress);
+    console.log("📜 合约代码长度:", code.length);
+
+    if (code === "0x") {
+      console.error("❌ 合约未部署或地址错误");
+      return;
+    }
+
+    // 尝试调用简单函数
+    const contract = new ethers.Contract(
+      contractAddress,
+      [
+        {
+          inputs: [],
+          name: "registerFee",
+          outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+          stateMutability: "view",
+          type: "function",
+        },
+      ],
+      provider
+    );
+
+    console.log("🎯 尝试调用 registerFee...");
+    const fee = await contract.registerFee();
+    console.log("✅ 注册费用:", ethers.utils.formatEther(fee), "ETH");
+  } catch (error) {
+    console.error("❌ 诊断失败:", error);
+  }
+}
+
+// 运行诊断
+debugContract();
