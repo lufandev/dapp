@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import Card from "./Card";
 import { useLocale } from "@/components/LocaleProvider";
 import { ValueID } from "@/types";
-import { ethers } from "ethers";
 
 interface ValueIDCardProps {
   id: string;
@@ -33,28 +32,6 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
 }) => {
   const router = useRouter();
   const { t } = useLocale();
-
-  // 格式化价格显示，将wei转换为USDT
-  const formatPrice = (priceInWei: number): string => {
-    if (!priceInWei || priceInWei === 0) {
-      return "0.00";
-    }
-
-    try {
-      // 将价格从wei转换为USDT (18位小数)
-      const formattedPrice = ethers.utils.formatUnits(
-        priceInWei.toString(),
-        18
-      );
-      const numericPrice = parseFloat(formattedPrice);
-
-      // 保留两位小数
-      return numericPrice.toFixed(2);
-    } catch (error) {
-      console.error("价格格式化失败:", error);
-      return "0.00";
-    }
-  };
 
   const handleClick = () => {
     if (valueIDData) {
@@ -117,8 +94,8 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
           <>
             <div style={{ color: "var(--primary-color)", fontWeight: 700 }}>
               {displayMode === "rental" && isRental && rentalPrice
-                ? `$${formatPrice(rentalPrice)}`
-                : `$${formatPrice(price)}`}
+                ? `${rentalPrice.toFixed(2)}`
+                : `${price.toFixed(2)}`}
             </div>
             {displayMode === "rental" && isRental ? (
               <div
@@ -132,7 +109,7 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
                 className="text-[0.75rem]"
                 style={{ color: "var(--tab-inactive-color)" }}
               >
-                USDT
+                ETH
               </div>
             ) : null}
           </>

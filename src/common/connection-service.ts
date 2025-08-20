@@ -87,9 +87,6 @@ export const connect = async () => {
   await trying();
 };
 
-// NFT合约地址 - 保持向后兼容
-const NFT_CONTRACT_ADDRESS = "0xf27b70557f83956823c3174bf7955660b7c13a4d";
-
 // 合约地址获取函数
 export const getContractAddresses = () => {
   const config = configuration();
@@ -101,100 +98,6 @@ export const getContractAddresses = () => {
     nft: config.nftAddress,
   };
 };
-
-// NFT合约ABI - 只包含需要的函数
-const NFT_CONTRACT_ABI = [
-  {
-    inputs: [{ internalType: "address", name: "owner", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "owner", type: "address" },
-      { internalType: "uint256", name: "index", type: "uint256" },
-    ],
-    name: "tokenOfOwnerByIndex",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "tokenURI",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    name: "idOfToken",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    name: "saleInfo",
-    outputs: [
-      { internalType: "address", name: "seller", type: "address" },
-      { internalType: "uint256", name: "price", type: "uint256" },
-      { internalType: "address", name: "payToken", type: "address" },
-      { internalType: "address", name: "receiver", type: "address" },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "totalSupply",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "index", type: "uint256" }],
-    name: "tokenByIndex",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "ownerOf",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "uint256", name: "tokenId", type: "uint256" },
-      { internalType: "uint256", name: "price", type: "uint256" },
-      { internalType: "address", name: "payToken", type: "address" },
-      { internalType: "address", name: "receiver", type: "address" },
-    ],
-    name: "listForSale",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "cancelSale",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "uint256", name: "tokenId", type: "uint256" }],
-    name: "buy",
-    outputs: [],
-    stateMutability: "payable",
-    type: "function",
-  },
-];
 
 // NFT出售信息接口
 export interface NFTSaleInfo {
@@ -357,56 +260,6 @@ export const getUserNFTAssets = async (
 };
 
 /**
- * 获取NFT的出售信息
- * @param tokenId NFT的token ID
- * @returns NFT的出售信息
- */
-export const getSaleInfo = async (tokenId: string): Promise<NFTSaleInfo> => {
-  try {
-    const { provider } = await connectOnce();
-
-    console.log("🚀 查询NFT出售信息, Token ID:", tokenId);
-
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
-      provider
-    );
-
-    // 调用saleInfo方法
-    const saleResult = await contract.saleInfo(tokenId);
-
-    console.log("🚀 合约返回的出售信息:", saleResult);
-
-    // 检查是否有出售信息（price大于0表示正在出售）
-    const price = saleResult.price.toString();
-    const isForSale = price !== "0";
-
-    const saleInfo: NFTSaleInfo = {
-      seller: saleResult.seller,
-      price: price,
-      payToken: saleResult.payToken,
-      receiver: saleResult.receiver,
-      isForSale: isForSale,
-    };
-
-    console.log("🚀 处理后的出售信息:", saleInfo);
-    return saleInfo;
-  } catch (error) {
-    console.error("🚀 获取NFT出售信息失败:", error);
-    // 返回默认的空出售信息
-    return {
-      seller: "0x0000000000000000000000000000000000000000",
-      price: "0",
-      payToken: "0x0000000000000000000000000000000000000000",
-      receiver: "0x0000000000000000000000000000000000000000",
-      isForSale: false,
-    };
-  }
-};
-
-/**
  * 获取所有有价格的NFT（用于市场展示）- 使用NFTCore和NFTSale合约
  * @returns 所有正在出售的NFT资产列表
  */
@@ -492,9 +345,7 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
 
               console.log(`🚀 NFT #${tokenIdString} 出售信息:`, {
                 isForSale,
-                price: isForSale
-                  ? ethers.utils.formatEther(price) + " ETH"
-                  : "0",
+                price: isForSale ? price + " ETH" : "0",
                 seller: saleResult.seller,
               });
             } catch (error) {
@@ -514,9 +365,7 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
             // 只处理有价格的NFT（正在出售的）
             if (saleInfo.isForSale && parseFloat(saleInfo.price) > 0) {
               console.log(
-                `🚀 发现出售中的NFT - ID: ${finalID}, 价格: ${ethers.utils.formatEther(
-                  saleInfo.price
-                )} ETH, 所有者: ${owner}`
+                `🚀 发现出售中的NFT - ID: ${finalID}, 价格: ${saleInfo.price} ETH, 所有者: ${owner}`
               );
 
               // 构造NFT资产对象
@@ -574,182 +423,6 @@ export const getCurrentUserNFTAssets = async (): Promise<UserNFTAsset[]> => {
   return getUserNFTAssets();
 };
 
-/**
- * 挂售NFT
- * @param tokenId NFT的token ID
- * @param price 价格（wei单位）
- * @param payToken 支付代币地址
- * @param receiver 收款地址
- * @returns 交易哈希
- */
-export const listForSale = async (
-  tokenId: string,
-  price: string,
-  payToken: string,
-  receiver: string
-): Promise<string> => {
-  try {
-    const { signer } = await connectOnce();
-
-    console.log("🚀 开始挂售NFT");
-    console.log("🚀 参数:", { tokenId, price, payToken, receiver });
-
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
-      signer
-    );
-
-    // 调用listForSale方法
-    const tx = await contract.listForSale(tokenId, price, payToken, receiver);
-
-    console.log("🚀 交易已发送:", tx.hash);
-
-    globalFeedback.toast.info("交易已提交", "正在等待区块链确认...");
-
-    // 等待交易确认
-    const receipt = await tx.wait();
-
-    console.log("🚀 交易已确认:", receipt);
-
-    globalFeedback.toast.success(
-      "挂售成功",
-      `NFT已成功挂售，交易哈希: ${tx.hash.substring(0, 10)}...`
-    );
-
-    return tx.hash;
-  } catch (error) {
-    console.error("🚀 挂售NFT失败:", error);
-
-    let errorMessage = "挂售失败，请重试";
-    if (error instanceof Error) {
-      if (error.message.includes("user rejected")) {
-        errorMessage = "用户取消了交易";
-      } else if (error.message.includes("insufficient funds")) {
-        errorMessage = "余额不足，无法支付Gas费";
-      } else if (error.message.includes("execution reverted")) {
-        errorMessage = "合约执行失败，请检查NFT是否已挂售";
-      }
-    }
-
-    globalFeedback.toast.error("挂售失败", errorMessage);
-    throw error;
-  }
-};
-
-/**
- * 取消挂售NFT
- * @param tokenId NFT的token ID
- * @returns 交易哈希
- */
-export const cancelSale = async (tokenId: string): Promise<string> => {
-  try {
-    const { signer } = await connectOnce();
-
-    console.log("🚀 开始取消挂售NFT");
-    console.log("🚀 参数:", { tokenId });
-
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
-      signer
-    );
-
-    // 调用cancelSale方法
-    const tx = await contract.cancelSale(tokenId);
-
-    console.log("🚀 取消挂售交易已发送:", tx.hash);
-
-    globalFeedback.toast.info("交易已提交", "正在等待区块链确认...");
-
-    // 等待交易确认
-    const receipt = await tx.wait();
-
-    console.log("🚀 取消挂售交易已确认:", receipt);
-
-    globalFeedback.toast.success(
-      "取消挂售成功",
-      `NFT已成功取消挂售，交易哈希: ${tx.hash.substring(0, 10)}...`
-    );
-
-    return tx.hash;
-  } catch (error) {
-    console.error("🚀 取消挂售NFT失败:", error);
-
-    let errorMessage = "取消挂售失败，请重试";
-    if (error instanceof Error) {
-      if (error.message.includes("user rejected")) {
-        errorMessage = "用户取消了交易";
-      } else if (error.message.includes("insufficient funds")) {
-        errorMessage = "余额不足，无法支付Gas费";
-      } else if (error.message.includes("execution reverted")) {
-        errorMessage = "合约执行失败，请检查NFT是否处于挂售状态";
-      }
-    }
-
-    globalFeedback.toast.error("取消挂售失败", errorMessage);
-    throw error;
-  }
-};
-
-/**
- * 购买NFT
- * @param tokenId NFT的token ID
- * @returns 交易哈希
- */
-export const buyNFT = async (tokenId: string): Promise<string> => {
-  try {
-    const { signer } = await connectOnce();
-
-    console.log("🚀 开始购买NFT");
-    console.log("🚀 参数:", { tokenId });
-
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
-      signer
-    );
-
-    // 调用buy方法
-    const tx = await contract.buy(tokenId);
-
-    console.log("🚀 购买交易已发送:", tx.hash);
-
-    globalFeedback.toast.info("交易已提交", "正在等待区块链确认...");
-
-    // 等待交易确认
-    const receipt = await tx.wait();
-
-    console.log("🚀 购买交易已确认:", receipt);
-
-    globalFeedback.toast.success(
-      "购买成功",
-      `NFT购买成功，交易哈希: ${tx.hash.substring(0, 10)}...`
-    );
-
-    return tx.hash;
-  } catch (error) {
-    console.error("🚀 购买NFT失败:", error);
-
-    let errorMessage = "购买失败，请重试";
-    if (error instanceof Error) {
-      if (error.message.includes("user rejected")) {
-        errorMessage = "用户取消了交易";
-      } else if (error.message.includes("insufficient funds")) {
-        errorMessage = "余额不足，无法支付购买费用";
-      } else if (error.message.includes("execution reverted")) {
-        errorMessage = "合约执行失败，请检查NFT是否仍在出售";
-      }
-    }
-
-    globalFeedback.toast.error("购买失败", errorMessage);
-    throw error;
-  }
-};
-
 // ========== NFTCore 合约相关函数 ==========
 
 /**
@@ -772,7 +445,7 @@ export const registerNFT = async (
     const registerFee = await contract.registerFee();
     const paymentToken = await contract.paymentToken();
 
-    console.log("🚀 注册费用:", ethers.utils.formatEther(registerFee));
+    console.log("🚀 注册费用:", registerFee.toString(), "ETH");
     console.log("🚀 支付代币:", paymentToken);
 
     // 调用注册函数
@@ -976,7 +649,7 @@ export const buyNFTFromSale = async (tokenId: string): Promise<string> => {
       throw new Error("NFT未上架出售");
     }
 
-    console.log("🚀 NFT价格:", ethers.utils.formatEther(saleInfo.price), "ETH");
+    console.log("🚀 NFT价格:", saleInfo.price, "ETH");
 
     const tx = await contract.buy(tokenId, {
       value: saleInfo.price,
@@ -1075,7 +748,7 @@ export const getNFTSaleInfo = async (
     return {
       seller: saleInfo.seller,
       price: saleInfo.price.toString(),
-      priceInEth: ethers.utils.formatEther(saleInfo.price),
+      priceInEth: saleInfo.price.toString(), // 直接使用wei值作为ETH显示
     };
   } catch (error) {
     console.error("🚀 获取NFT出售信息失败:", error);
@@ -1174,7 +847,7 @@ export const rentNFT = async (
     }
 
     const totalCost = rentalInfo.pricePerDay.mul(daysCount);
-    console.log("🚀 总租金:", ethers.utils.formatEther(totalCost), "ETH");
+    console.log("🚀 总租金:", totalCost.toString(), "ETH");
 
     const tx = await contract.rentToken(tokenId, daysCount, {
       value: totalCost,
@@ -1283,7 +956,7 @@ export const getNFTRentalInfo = async (
     return {
       lender: rentalInfo.lender,
       pricePerDay: rentalInfo.pricePerDay.toString(),
-      pricePerDayInEth: ethers.utils.formatEther(rentalInfo.pricePerDay),
+      pricePerDayInEth: rentalInfo.pricePerDay.toString(), // 直接使用wei值作为ETH显示
       maxDays: rentalInfo.maxDays.toNumber(),
     };
   } catch (error) {

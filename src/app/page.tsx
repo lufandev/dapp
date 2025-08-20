@@ -189,6 +189,7 @@ export default function Home() {
 
       // 转换为ValueID格式
       const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
+      console.log("🚀 ~ refresh ~ valueIDs:", valueIDs);
 
       setAllValueIDs(valueIDs);
     } catch (err) {
@@ -325,20 +326,6 @@ export default function Home() {
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
             onClick={async () => {
               await connect();
-              // if (isAuthenticated) {
-              //   toast.success("钱包已连接");
-              // } else {
-              // toast.info(t("common.connectWallet") || "连接钱包");
-              // const provider = new ethers.providers.Web3Provider(
-              //   window.ethereum
-              // );
-              // await provider.send("eth_requestAccounts", []);
-              // const signer = provider.getSigner();
-              // console.log(signer);
-              // const address = await signer.getAddress();
-              // console.log(address);
-              // isAuthenticated = true;
-              // }
             }}
           >
             <FaWallet size={12} />
