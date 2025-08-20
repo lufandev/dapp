@@ -407,79 +407,155 @@ export const getSaleInfo = async (tokenId: string): Promise<NFTSaleInfo> => {
 };
 
 /**
- * 获取所有有价格的NFT（用于市场展示）
+ * 获取所有有价格的NFT（用于市场展示）- 使用NFTCore和NFTSale合约
  * @returns 所有正在出售的NFT资产列表
  */
 export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
   try {
     const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
 
     console.log("🚀 开始获取所有NFT及出售信息...");
 
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
+    // 创建NFTCore合约实例
+    const nftCoreContract = new ethers.Contract(
+      addresses.nftCore,
+      NFTCoreABI,
       provider
     );
 
-    // 获取总供应量
-    const totalSupply = await contract.totalSupply();
-    const totalSupplyNum = totalSupply.toNumber();
+    // 创建NFTSale合约实例
+    const nftSaleContract = new ethers.Contract(
+      addresses.nftSale,
+      NFTSaleABI,
+      provider
+    );
 
-    console.log("🚀 NFT总供应量:", totalSupplyNum);
+    // 分页获取所有NFT ID（从getIDsPaginated开始，先获取少量数据测试）
+    const batchSize = 20; // 每批获取20个
+    const allNFTs: UserNFTAsset[] = [];
+    let offset = 0;
+    let hasMore = true;
 
-    if (totalSupplyNum === 0) {
-      return [];
-    }
-
-    // 获取所有NFT的详细信息
-    const nftsWithSaleInfo: UserNFTAsset[] = [];
-
-    for (let i = 0; i < totalSupplyNum; i++) {
+    while (hasMore) {
       try {
-        // 获取tokenId (通过索引)
-        const tokenId = await contract.tokenByIndex(i);
-        const tokenIdString = tokenId.toString();
+        // 使用NFTCore的getIDsPaginated方法获取NFT ID列表
+        const idList = await nftCoreContract.getIDsPaginated(offset, batchSize);
 
-        console.log(`🚀 第${i + 1}个NFT - Token ID:`, tokenIdString);
+        if (idList.length === 0) {
+          hasMore = false;
+          break;
+        }
 
-        // 获取出售信息
-        const saleInfo = await getSaleInfo(tokenIdString);
+        console.log(
+          `🚀 第${Math.floor(offset / batchSize) + 1}批 - 获取到 ${
+            idList.length
+          } 个NFT ID`
+        );
 
-        // 只处理有价格的NFT（正在出售的）
-        if (saleInfo.isForSale && parseFloat(saleInfo.price) > 0) {
-          // 获取NFT的其他信息
-          const idString = await contract.idOfToken(tokenId);
-          const tokenURI = await contract.tokenURI(tokenId);
-          const owner = await contract.ownerOf(tokenId);
+        // 处理这一批NFT
+        for (let i = 0; i < idList.length; i++) {
+          try {
+            const tokenId = offset + i + 1; // tokenId从1开始
+            const tokenIdString = tokenId.toString();
+            const finalID = idList[i];
 
-          console.log(
-            `🚀 出售中的NFT - ID: ${idString}, 价格: ${saleInfo.price}, 所有者: ${owner}`
-          );
+            console.log(
+              `🚀 处理NFT - Token ID: ${tokenIdString}, Final ID: ${finalID}`
+            );
 
-          // 构造NFT资产对象
-          const asset: UserNFTAsset = {
-            tokenId: tokenIdString,
-            name: idString || `NFT #${tokenIdString}`,
-            idString: idString,
-            tokenURI: tokenURI,
-            image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
-            saleInfo: saleInfo,
-            owner: owner,
-          };
+            // 获取NFT的基本信息
+            let owner;
+            let tokenURI;
+            try {
+              owner = await nftCoreContract.ownerOf(tokenIdString);
+              tokenURI = await nftCoreContract.tokenURI(tokenIdString);
+            } catch {
+              console.log(`🚀 NFT #${tokenIdString} 可能已被销毁，跳过`);
+              continue;
+            }
 
-          nftsWithSaleInfo.push(asset);
+            // 使用NFTSale合约的sales方法获取出售信息
+            let saleInfo: NFTSaleInfo;
+            try {
+              const saleResult = await nftSaleContract.sales(tokenIdString);
+              const price = saleResult.price.toString();
+              const isForSale = price !== "0";
+
+              saleInfo = {
+                seller: saleResult.seller,
+                price: price,
+                payToken: "0x0000000000000000000000000000000000000000", // ETH
+                receiver: saleResult.seller,
+                isForSale: isForSale,
+              };
+
+              console.log(`🚀 NFT #${tokenIdString} 出售信息:`, {
+                isForSale,
+                price: isForSale
+                  ? ethers.utils.formatEther(price) + " ETH"
+                  : "0",
+                seller: saleResult.seller,
+              });
+            } catch (error) {
+              console.log(
+                `🚀 无法获取NFT #${tokenIdString} 的出售信息:`,
+                error
+              );
+              saleInfo = {
+                seller: "0x0000000000000000000000000000000000000000",
+                price: "0",
+                payToken: "0x0000000000000000000000000000000000000000",
+                receiver: "0x0000000000000000000000000000000000000000",
+                isForSale: false,
+              };
+            }
+
+            // 只处理有价格的NFT（正在出售的）
+            if (saleInfo.isForSale && parseFloat(saleInfo.price) > 0) {
+              console.log(
+                `🚀 发现出售中的NFT - ID: ${finalID}, 价格: ${ethers.utils.formatEther(
+                  saleInfo.price
+                )} ETH, 所有者: ${owner}`
+              );
+
+              // 构造NFT资产对象
+              const asset: UserNFTAsset = {
+                tokenId: tokenIdString,
+                name: finalID || `NFT #${tokenIdString}`,
+                idString: finalID,
+                tokenURI: tokenURI,
+                image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
+                saleInfo: saleInfo,
+                owner: owner,
+              };
+
+              allNFTs.push(asset);
+            } else {
+              console.log(`🚀 跳过未出售的NFT - Token ID: ${tokenIdString}`);
+            }
+          } catch (error) {
+            console.error(`🚀 处理NFT #${offset + i + 1} 失败:`, error);
+          }
+        }
+
+        // 如果返回的数量少于批次大小，说明已经是最后一批
+        if (idList.length < batchSize) {
+          hasMore = false;
         } else {
-          console.log(`🚀 跳过未出售的NFT - Token ID: ${tokenIdString}`);
+          offset += batchSize;
         }
       } catch (error) {
-        console.error(`🚀 获取第${i + 1}个NFT信息失败:`, error);
+        console.error(
+          `🚀 获取第${Math.floor(offset / batchSize) + 1}批NFT失败:`,
+          error
+        );
+        hasMore = false;
       }
     }
 
-    console.log("🚀 获取所有出售中的NFT完成:", nftsWithSaleInfo);
-    return nftsWithSaleInfo;
+    console.log(`🚀 获取所有出售中的NFT完成: 共${allNFTs.length}个`);
+    return allNFTs;
   } catch (error) {
     console.error("🚀 获取所有NFT出售信息失败:", error);
     globalFeedback.toast.error(
@@ -850,9 +926,9 @@ export const listNFTForSale = async (
     );
 
     const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
-    // const priceInWei = ethers.utils.parseEther(priceInEth);
+    const priceInWei = ethers.utils.parseEther(priceInEth);
 
-    const tx = await contract.listForSale(tokenId, priceInEth);
+    const tx = await contract.listForSale(tokenId, priceInWei);
     console.log("🚀 交易已发送:", tx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
