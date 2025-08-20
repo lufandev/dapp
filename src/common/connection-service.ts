@@ -190,7 +190,7 @@ export interface UserNFTAsset {
 }
 
 /**
- * 获取用户持有的所有NFT资产
+ * 获取用户持有的所有NFT资产 - 基于事件日志
  * @param userAddress 用户地址
  * @returns 用户的NFT资产列表
  */
@@ -200,55 +200,87 @@ export const getUserNFTAssets = async (
   try {
     const { provider, address } = await connectOnce();
     const targetAddress = userAddress || address;
+    const addresses = getContractAddresses();
 
-    console.log("🚀 开始获取用户NFT资产");
+    console.log("🚀 开始获取用户NFT资产（基于事件日志）");
     console.log("🚀 用户地址:", targetAddress);
-    console.log("🚀 合约地址:", NFT_CONTRACT_ADDRESS);
+    console.log("🚀 NFTCore合约地址:", addresses.nftCore);
 
-    // 创建合约实例
-    const contract = new ethers.Contract(
-      NFT_CONTRACT_ADDRESS,
-      NFT_CONTRACT_ABI,
+    // 创建NFTCore合约实例
+    const nftCoreContract = new ethers.Contract(
+      addresses.nftCore,
+      NFTCoreABI,
       provider
     );
 
-    // 获取用户拥有的NFT数量
-    const balance = await contract.balanceOf(targetAddress);
-    const balanceNum = balance.toNumber();
+    // 获取用户的注册事件
+    const filter = nftCoreContract.filters.Registered(targetAddress);
+    const logs = await nftCoreContract.queryFilter(filter, 0, "latest");
 
-    console.log("🚀 用户拥有的NFT数量:", balanceNum);
+    console.log(`🚀 找到 ${logs.length} 条注册记录`);
 
-    if (balanceNum === 0) {
+    if (logs.length === 0) {
       return [];
     }
 
-    // 获取每个NFT的详细信息
     const assets: UserNFTAsset[] = [];
 
-    for (let i = 0; i < balanceNum; i++) {
+    // 处理每个注册事件
+    for (let i = 0; i < logs.length; i++) {
       try {
-        // 获取tokenId
-        const tokenId = await contract.tokenOfOwnerByIndex(targetAddress, i);
-        const tokenIdString = tokenId.toString();
+        const log = logs[i];
+        const logEvent = log as any;
 
-        console.log(`🚀 第${i + 1}个NFT - Token ID:`, tokenIdString);
+        const tokenIdString = logEvent.args.tokenId.toString();
+        const finalID = logEvent.args.finalID;
 
-        // 获取ID字符串
-        const idString = await contract.idOfToken(tokenId);
+        console.log(
+          `🚀 第${
+            i + 1
+          }个NFT - Token ID: ${tokenIdString}, Final ID: ${finalID}`
+        );
+
+        // 检查用户是否仍然拥有这个NFT（可能已经转出）
+        let currentOwner;
+        try {
+          currentOwner = await nftCoreContract.ownerOf(tokenIdString);
+        } catch (error) {
+          console.log(`🚀 NFT #${tokenIdString} 可能已被销毁，跳过`, error);
+          continue;
+        }
+
+        // 只返回用户当前拥有的NFT
+        if (currentOwner.toLowerCase() !== targetAddress.toLowerCase()) {
+          console.log(
+            `🚀 NFT #${tokenIdString} 已转给其他用户: ${currentOwner}，跳过`
+          );
+          continue;
+        }
 
         // 获取tokenURI
-        const tokenURI = await contract.tokenURI(tokenId);
+        let tokenURI;
+        try {
+          tokenURI = await nftCoreContract.tokenURI(tokenIdString);
+        } catch (error) {
+          console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
+          tokenURI = finalID; // 使用finalID作为备用
+        }
 
-        console.log(`🚀 NFT详情 - ID: ${idString}, URI: ${tokenURI}`);
+        console.log(`🚀 NFT详情 - ID: ${finalID}, URI: ${tokenURI}`);
 
-        // 获取出售信息
-        const saleInfo = await getSaleInfo(tokenIdString);
+        // 获取出售信息（如果有NFTSale合约）
+        let saleInfo: NFTSaleInfo | undefined;
+        try {
+          saleInfo = await getNFTSaleInfo(tokenIdString);
+        } catch (error) {
+          console.log(`🚀 无法获取NFT #${tokenIdString} 的出售信息:`, error);
+        }
 
         // 构造NFT资产对象
         const asset: UserNFTAsset = {
           tokenId: tokenIdString,
-          name: idString || `NFT #${tokenIdString}`,
-          idString: idString,
+          name: finalID || `NFT #${tokenIdString}`,
+          idString: finalID,
           tokenURI: tokenURI,
           image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
           saleInfo: saleInfo,
@@ -257,7 +289,7 @@ export const getUserNFTAssets = async (
 
         assets.push(asset);
       } catch (error) {
-        console.error(`🚀 获取第${i + 1}个NFT信息失败:`, error);
+        console.error(`🚀 处理第${i + 1}个注册记录失败:`, error);
       }
     }
 

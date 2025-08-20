@@ -9,7 +9,7 @@ import Card from "@/components/ui/Card";
 import Modal from "@/components/ui/Modal";
 import Input from "@/components/ui/Input";
 import Select from "@/components/ui/Select";
-import { apiService } from "@/common/api";
+// import { apiService } from "@/common/api";
 // import { mockUser } from "@/data/mockData";
 import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
@@ -35,7 +35,7 @@ export default function NFTDetailPage() {
   const fromList = searchParams.get("fromList");
 
   const [valueId, setValueId] = useState<ValueID | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  // const [user, setUser] = useState<User | null>(null);
   const [userAddress, setUserAddress] = useState<string | null>(null);
 
   // 格式化价格显示，将wei转换为USDT
@@ -97,9 +97,9 @@ export default function NFTDetailPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const response = await apiService.getUserProfile(1);
-      setUser(response);
-      console.log(response);
+      // const response = await apiService.getUserProfile(1);
+      // setUser(response);
+      // console.log(response);
       const { address } = await connectOnce();
       setUserAddress(address);
       setSellAddress(address); // 设置收款地址为当前用户钱包地址
@@ -117,16 +117,18 @@ export default function NFTDetailPage() {
     userAddress &&
     (valueId.owner.id.toString().toLowerCase() === userAddress.toLowerCase() ||
       valueId.owner.username.toLowerCase() === userAddress.toLowerCase());
-  console.log("🚀 ~ NFTDetailPage ~ isOwnedByUser:", isOwnedByUser, user, id);
+  console.log("🚀 ~ NFTDetailPage ~ isOwnedByUser:", isOwnedByUser, id);
 
   // 检查是否是租赁的ID
-  const isRentedByUser = user?.rentedValueIDs?.some(
-    (item) => item.id.toString() === id.toString()
-  );
+  // const isRentedByUser = user?.rentedValueIDs?.some(
+  //   (item) => item.id.toString() === id.toString()
+  // );
+  const isRentedByUser = false;
 
-  // 检查ID是否已收藏
+  // // 检查ID是否已收藏
   const [isFavorite, setIsFavorite] = useState(
-    user?.favorites?.some((item) => item.id.toString() === id.toString())
+    false
+    // user?.favorites?.some((item) => item.id.toString() === id.toString())
   );
 
   // 处理收藏/取消收藏
@@ -153,7 +155,7 @@ export default function NFTDetailPage() {
   const [rentDeposit, setRentDeposit] = useState("");
   const [rentDuration, setRentDuration] = useState("");
   const [rentCurrency, setRentCurrency] = useState("ETH");
-  const [rentAddress, setRentAddress] = useState(user?.address);
+  const [rentAddress, setRentAddress] = useState("");
 
   // 处理出售表单提交
   const handleSellSubmit = async () => {
