@@ -306,7 +306,7 @@ export const getUserNFTAssets = async (
 };
 
 /**
- * 获取所有有价格的NFT（用于市场展示）- 使用NFTCore和NFTSale合约
+ * 获取所有有价格的NFT（用于市场展示）- 通过监听SaleEvent事件
  * @returns 所有正在出售的NFT资产列表
  */
 export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
@@ -314,14 +314,146 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
     return [];
   }
   try {
-    console.log("🚀 开始获取所有NFT及出售信息...");
-    console.log(
-      "⚠️ 注意：由于getIDsPaginated函数在ABI中不存在，暂时返回空数组"
-    );
-    console.log("⚠️ 需要实现替代方案来获取NFT列表");
+    const { provider } = await connectOnce();
+    const addresses = getContractAddresses();
 
-    // 暂时返回空数组，因为getIDsPaginated函数不存在
-    return [];
+    console.log("🚀 开始获取所有NFT及出售信息（通过SaleEvent事件）...");
+    console.log("🚀 NFTSale合约地址:", addresses.nftSale);
+    console.log("🚀 NFTCore合约地址:", addresses.nftCore);
+
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredSaleABI = IDNFTSaleABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+    const filteredCoreABI = IDNFTABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+
+    // 创建合约实例
+    const nftSaleContract = new ethers.Contract(
+      addresses.nftSale,
+      filteredSaleABI,
+      provider
+    );
+    const nftCoreContract = new ethers.Contract(
+      addresses.nftCore,
+      filteredCoreABI,
+      provider
+    );
+
+    // 获取所有SaleEvent事件（上架事件）
+    const saleFilter = nftSaleContract.filters.SaleEvent();
+    const saleEvents = await nftSaleContract.queryFilter(
+      saleFilter,
+      0,
+      "latest"
+    );
+
+    console.log(`🚀 找到 ${saleEvents.length} 条SaleEvent记录`, saleEvents);
+
+    if (saleEvents.length === 0) {
+      return [];
+    }
+
+    const assets: UserNFTAsset[] = [];
+    const processedTokenIds = new Set<string>(); // 避免重复处理同一个tokenId
+
+    // 处理每个SaleEvent事件
+    for (let i = saleEvents.length - 1; i >= 0; i--) {
+      // 从最新的事件开始处理
+      try {
+        const event = saleEvents[i];
+        const args = event.args;
+
+        if (!args) continue;
+
+        // 安全地转换BigNumber类型的数据
+        const tokenIdString = args.tokenId.toString();
+        const priceString = args.price.toString();
+        const amountString = args.amount.toString();
+        const priceInEther = ethers.utils.formatEther(args.price);
+        
+        // 处理Indexed类型的id字段
+        let idValue = "";
+        if (args.id && typeof args.id === 'object' && 'hash' in args.id) {
+          // id是indexed参数，只能获取hash值
+          idValue = args.id.hash || "";
+        } else if (typeof args.id === 'string') {
+          idValue = args.id;
+        }
+        
+        const seller = args.seller;
+        const buyer = args.buyer;
+        const receiver = args.receiver;
+        const payToken = args.payToken;
+        const nftAddr = args.nftAddr;
+
+        // 如果buyer不是零地址，说明NFT已被购买，跳过
+        if (buyer !== "0x0000000000000000000000000000000000000000") {
+          console.log(`🚀 NFT #${tokenIdString} 已被购买，跳过`);
+          continue;
+        }
+
+        // 如果amount为0，说明已取消出售，跳过
+        if (amountString === "0") {
+          console.log(`🚀 NFT #${tokenIdString} 已取消出售，跳过`);
+          continue;
+        }
+
+        // 避免重复处理同一个tokenId（只保留最新的上架记录）
+        if (processedTokenIds.has(tokenIdString)) {
+          continue;
+        }
+        processedTokenIds.add(tokenIdString);
+
+        console.log(
+          `🚀 处理NFT #${tokenIdString} - ID: ${idValue}, 价格: ${priceInEther} ETH, 卖家: ${seller}`
+        );
+
+        // 获取tokenURI
+        let tokenURI;
+        try {
+          tokenURI = await nftCoreContract.uri(tokenIdString);
+        } catch (error) {
+          console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
+          tokenURI = idValue || `NFT #${tokenIdString}`;
+        }
+
+        // 构造出售信息
+        const saleInfo: NFTSaleInfo = {
+          seller: seller,
+          price: priceString, // 使用wei单位的价格字符串
+          payToken: payToken, // 使用实际的支付代币地址
+          receiver: receiver,
+          isForSale: true,
+        };
+
+        // 构造NFT资产对象
+        const asset: UserNFTAsset = {
+          tokenId: tokenIdString,
+          name: idValue || `NFT #${tokenIdString}`,
+          idString: idValue,
+          tokenURI: tokenURI,
+          image: `/images/nft${(assets.length % 6) + 1}.jpg`, // 临时使用本地图片
+          saleInfo: saleInfo,
+          owner: seller,
+        };
+        
+        // 记录NFT合约地址信息（用于调试）
+        console.log(`🚀 NFT合约地址: ${nftAddr}, 数量: ${amountString}`);
+
+        assets.push(asset);
+      } catch (error) {
+        console.error(`🚀 处理第${i + 1}个SaleEvent记录失败:`, error);
+      }
+    }
+
+    console.log(
+      `🚀 获取所有NFT出售信息完成，共 ${assets.length} 个正在出售的NFT`
+    );
+    return assets;
   } catch (error) {
     console.error("🚀 获取所有NFT出售信息失败:", error);
     globalFeedback.toast.error(
@@ -479,10 +611,11 @@ export const listNFTForSale = async (
     );
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredSaleABI = IDNFTSaleABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftSale,
       filteredSaleABI,
@@ -546,10 +679,11 @@ export const buyNFTFromSale = async (
     console.log(`🚀 购买NFT - Token ID: ${tokenId}, 数量: ${amount}`);
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredSaleABI = IDNFTSaleABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftSale,
       filteredSaleABI,
@@ -600,10 +734,11 @@ export const cancelNFTSale = async (tokenId: string): Promise<string> => {
     console.log(`🚀 取消NFT出售 - Token ID: ${tokenId}`);
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredSaleABI = IDNFTSaleABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftSale,
       filteredSaleABI,
@@ -687,10 +822,11 @@ export const listNFTForRent = async (
     );
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredRentABI = IDNFTRentABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftRental,
       filteredRentABI,
@@ -761,10 +897,11 @@ export const rentNFT = async (
     console.log(`🚀 租赁NFT - Token ID: ${tokenId}, 天数: ${daysCount}`);
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredRentABI = IDNFTRentABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftRental,
       filteredRentABI,
@@ -863,10 +1000,11 @@ export const getNFTRentalInfo = async (
     const addresses = getContractAddresses();
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredRentABI = IDNFTRentABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftRental,
       filteredRentABI,
@@ -910,10 +1048,11 @@ export const getNFTActiveRental = async (
     const addresses = getContractAddresses();
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
-    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
-      item.type === 'function' || item.type === 'event'
+    const filteredRentABI = IDNFTRentABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
     );
-    
+
     const contract = new ethers.Contract(
       addresses.nftRental,
       filteredRentABI,

@@ -14,6 +14,7 @@ import { ValueID } from "@/types";
 // import { ethers } from "ethers";
 // import { useFeedback } from "@/components/ui/Feedback";
 import { UserNFTAsset } from "@/common/connection-service";
+import { ethers } from "ethers";
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
@@ -47,14 +48,44 @@ export default function Home() {
     (asset: UserNFTAsset): ValueID => {
       const saleInfo = asset.saleInfo;
 
+      // 安全地转换价格，处理BigNumber对象，将WEI转换为ETH
+      let priceValue = 0;
+      if (saleInfo?.isForSale && saleInfo.price) {
+        try {
+          // 如果price是BigNumber对象，使用ethers.utils.formatEther转换
+          if (
+            typeof saleInfo.price === "object" &&
+            saleInfo.price !== null &&
+            "toString" in saleInfo.price
+          ) {
+            // 检查是否是BigNumber类型
+            priceValue = parseFloat(
+              ethers.utils.formatEther(saleInfo.price as ethers.BigNumberish)
+            );
+          } else if (typeof saleInfo.price === "string") {
+            // 如果已经是字符串（WEI单位），转换为ETH
+            priceValue = parseFloat(ethers.utils.formatEther(saleInfo.price));
+          } else if (typeof saleInfo.price === "number") {
+            // 如果已经是数字（假设是WEI单位），转换为ETH
+            priceValue = parseFloat(ethers.utils.formatEther(String(saleInfo.price)));
+          }
+        } catch (error) {
+          console.error("价格转换失败:", error, saleInfo.price);
+          priceValue = 0;
+        }
+      }
+
+      // 安全地转换tokenId为字符串
+      const tokenIdValue = String(asset.tokenId);
+
       return {
-        id: asset.tokenId,
+        id: tokenIdValue,
         name: asset.name,
         description: `NFT with ID: ${asset.idString}`,
         image: asset.image || "/images/nft1.jpg",
-        tokenId: asset.tokenId,
-        indexNumber: asset.tokenId,
-        price: saleInfo?.isForSale ? parseFloat(saleInfo.price) : 0, // 将wei转换为ether
+        tokenId: tokenIdValue,
+        indexNumber: tokenIdValue,
+        price: priceValue,
         paymentAddress: saleInfo?.receiver || "",
         paymentCurrency: saleInfo?.payToken
           ? getTokenSymbol(saleInfo.payToken)
@@ -85,14 +116,17 @@ export default function Home() {
         console.log("🚀 开始从合约加载所有出售中的NFT...");
 
         // 从合约获取所有有价格的NFT
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setAllValueIDs([]);
           setLoading(false);
           return;
         }
-        
-        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
+
+        const { getAllNFTsWithSaleInfo } = await import(
+          "@/common/connection-service"
+        );
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
+        console.log("🚀 ~ loadData ~ nftsWithSaleInfo:", nftsWithSaleInfo);
 
         // 转换为ValueID格式
         const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
@@ -113,13 +147,15 @@ export default function Home() {
         console.log("🚀 开始从合约加载推荐NFT...");
 
         // 从合约获取所有有价格的NFT
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setRecommendedValueIDs([]);
           setRecommendedLoading(false);
           return;
         }
-        
-        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
+
+        const { getAllNFTsWithSaleInfo } = await import(
+          "@/common/connection-service"
+        );
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按收藏数排序（这里暂时随机排序，可以后续改进）
@@ -143,19 +179,24 @@ export default function Home() {
         console.log("🚀 开始从合约加载最新NFT...");
 
         // 从合约获取所有有价格的NFT
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setLatestValueIDs([]);
           setLatestLoading(false);
           return;
         }
-        
-        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
+
+        const { getAllNFTsWithSaleInfo } = await import(
+          "@/common/connection-service"
+        );
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按tokenId倒序排序（新的NFT通常有更大的tokenId）
         const valueIDs = nftsWithSaleInfo
           .map(convertNFTAssetToValueID)
-          .sort((a: ValueID, b: ValueID) => parseInt(b.tokenId) - parseInt(a.tokenId))
+          .sort(
+            (a: ValueID, b: ValueID) =>
+              parseInt(b.tokenId) - parseInt(a.tokenId)
+          )
           .slice(0, 20); // 限制20个
 
         setLatestValueIDs(valueIDs);
@@ -203,13 +244,15 @@ export default function Home() {
       console.log("🚀 刷新合约数据...");
 
       // 从合约获取所有有价格的NFT
-      if (typeof window === 'undefined') {
+      if (typeof window === "undefined") {
         setAllValueIDs([]);
         setLoading(false);
         return;
       }
-      
-      const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
+
+      const { getAllNFTsWithSaleInfo } = await import(
+        "@/common/connection-service"
+      );
       const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
       // 转换为ValueID格式
@@ -351,13 +394,15 @@ export default function Home() {
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
             disabled={isConnecting}
             onClick={async () => {
-              if (typeof window !== 'undefined' && !isConnecting) {
+              if (typeof window !== "undefined" && !isConnecting) {
                 try {
                   setIsConnecting(true);
-                  const { connect } = await import('@/common/connection-service');
+                  const { connect } = await import(
+                    "@/common/connection-service"
+                  );
                   await connect();
                 } catch (error) {
-                  console.error('连接钱包失败:', error);
+                  console.error("连接钱包失败:", error);
                 } finally {
                   // 延迟重置状态，避免快速重复点击
                   setTimeout(() => {
@@ -367,7 +412,13 @@ export default function Home() {
               }
             }}
           >
-            {React.createElement(FaWallet as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 12 })}
+            {React.createElement(
+              FaWallet as React.ComponentType<{
+                size?: number;
+                style?: React.CSSProperties;
+              }>,
+              { size: 12 }
+            )}
             <span className="text-xs font-medium">
               {isConnecting
                 ? "连接中..."
