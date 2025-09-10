@@ -109,43 +109,43 @@ export default function ProfilePage() {
 
   const menuItems = [
     {
-      icon: <FaQrcode style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaQrcode as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.registerID"),
       onClick: () => setIsRegisterModalOpen(true),
     },
     {
-      icon: <FaWallet style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaWallet as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.walletBalance"),
       extra: "5,836.00 USDT",
       onClick: () => router.push("/finance"),
     },
     {
-      icon: <FaShieldAlt style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaShieldAlt as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.platformAuth"),
       onClick: () => alert(t("profile.platformAuth")),
     },
     {
-      icon: <FaShoppingBag style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaShoppingBag as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.sellOrders"),
       onClick: () => router.push("/orders/sell"),
     },
     {
-      icon: <FaExchangeAlt style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaExchangeAlt as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.rentalOrders"),
       onClick: () => router.push("/orders/rental"),
     },
     {
-      icon: <FaShoppingCart style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaShoppingCart as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.buyOrders"),
       onClick: () => router.push("/orders/buy"),
     },
     {
-      icon: <FaHandshake style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaHandshake as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.leaseOrders"),
       onClick: () => router.push("/orders/lease"),
     },
     {
-      icon: <FaLanguage style={{ color: "var(--primary-color)" }} />,
+      icon: React.createElement(FaLanguage as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
       title: t("profile.language"),
       onClick: handleLanguageChange,
       extra: locale === "en" ? t("language.english") : t("language.chinese"),
@@ -153,9 +153,9 @@ export default function ProfilePage() {
     {
       icon:
         theme === "light" ? (
-          <FaMoon style={{ color: "var(--primary-color)" }} />
+          React.createElement(FaMoon as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } })
         ) : (
-          <FaSun style={{ color: "var(--primary-color)" }} />
+          React.createElement(FaSun as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } })
         ),
       title: t("profile.theme"),
       onClick: handleThemeChange,
@@ -343,7 +343,7 @@ export default function ProfilePage() {
                 prevBanner();
               }}
             >
-              <FaChevronLeft size={14} />
+              {React.createElement(FaChevronLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14 })}
             </button>
 
             <button
@@ -353,7 +353,7 @@ export default function ProfilePage() {
                 nextBanner();
               }}
             >
-              <FaChevronRight size={14} />
+              {React.createElement(FaChevronRight as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14 })}
             </button>
 
             {/* 指示器 */}

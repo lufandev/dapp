@@ -8,10 +8,7 @@ import ValueIDCard from "@/components/ui/NFTCard";
 import Button from "@/components/ui/Button";
 import { useLocale } from "@/components/LocaleProvider";
 import { ValueID } from "@/types";
-import {
-  getCurrentUserNFTAssets,
-  UserNFTAsset,
-} from "@/common/connection-service";
+import { UserNFTAsset } from "@/common/connection-service";
 
 export default function InventoryPage() {
   const { t } = useLocale();
@@ -68,11 +65,26 @@ export default function InventoryPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      // 确保在客户端环境下才执行
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
+      
       try {
         setLoading(true);
         console.log("🚀 开始加载用户NFT资产...");
 
         // 获取用户持有的NFT
+        if (typeof window === 'undefined') {
+          setOwnedValueIDs([]);
+          setRentedValueIDs([]);
+          setFavoriteValueIDs([]);
+          setLoading(false);
+          return;
+        }
+        
+        const { getCurrentUserNFTAssets } = await import('@/common/connection-service');
         const userAssets = await getCurrentUserNFTAssets();
         console.log("🚀 获取到的NFT资产:", userAssets);
 

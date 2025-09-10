@@ -125,7 +125,7 @@ export default function FinanceRecordsPage() {
           className="w-[36px] h-[36px] rounded-full flex items-center justify-center"
           style={{ backgroundColor: "rgba(52, 211, 153, 0.1)" }}
         >
-          <FaArrowDown size={14} style={{ color: "rgb(16, 185, 129)" }} />
+          {React.createElement(FaArrowDown as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14, style: { color: "rgb(16, 185, 129)" } })}
         </div>
       );
     } else {
@@ -134,7 +134,7 @@ export default function FinanceRecordsPage() {
           className="w-[36px] h-[36px] rounded-full flex items-center justify-center"
           style={{ backgroundColor: "rgba(248, 113, 113, 0.1)" }}
         >
-          <FaArrowUp size={14} style={{ color: "rgb(239, 68, 68)" }} />
+          {React.createElement(FaArrowUp as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14, style: { color: "rgb(239, 68, 68)" } })}
         </div>
       );
     }
@@ -154,7 +154,7 @@ export default function FinanceRecordsPage() {
             className="mr-[8px] text-[1.25rem]"
             onClick={() => router.back()}
           >
-            <FaArrowLeft />
+            {React.createElement(FaArrowLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)}
           </button>
           <h1
             className="text-[1.25rem] font-[700]"

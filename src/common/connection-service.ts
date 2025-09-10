@@ -7,6 +7,9 @@ import NFTCoreABI from "@/artifacts/NFTCore.json";
 import NFTSaleABI from "@/artifacts/NFTSale.json";
 import NFTRentalABI from "@/artifacts/NFTRental.json";
 
+// 全局变量跟踪连接状态
+let isConnecting = false;
+
 // 类型定义
 interface EthereumProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -36,6 +39,9 @@ interface TransactionEvent {
 }
 
 export const connectOnce = async () => {
+  if (typeof window === "undefined") {
+    throw new Error("服务端环境不支持钱包连接");
+  }
   if (!(window as WindowWithEthereum).ethereum) {
     globalFeedback.toast.error(
       "钱包未安装",
@@ -47,6 +53,8 @@ export const connectOnce = async () => {
     (window as WindowWithEthereum)
       .ethereum as unknown as ethers.providers.ExternalProvider
   );
+  console.log("开始连接钱包", provider);
+
   await provider.send("eth_requestAccounts", []);
   const signer = provider.getSigner();
   const network = await provider.getNetwork();
@@ -54,6 +62,10 @@ export const connectOnce = async () => {
   return { chainId: network.chainId, address: address, provider, signer };
 };
 export const trying = async () => {
+  if (typeof window === "undefined") {
+    return { success: false };
+  }
+  console.log("trying");
   const { chainId, address, provider, signer } = await connectOnce();
   const supported = configuration().chainId.toString();
   if (chainId.toString() == supported) {
@@ -70,21 +82,53 @@ export const trying = async () => {
   return { success: false };
 };
 export const connect = async () => {
-  const { success } = await trying();
-  if (success) return;
-  const conf = configuration();
-  if (!(window as WindowWithEthereum).ethereum) {
-    globalFeedback.toast.error(
-      "钱包未安装",
-      "请安装 MetaMask 或其他以太坊钱包"
-    );
+  if (typeof window === "undefined") {
+    throw new Error("服务端环境不支持钱包连接");
+  }
+
+  // 防止重复连接
+  if (isConnecting) {
+    globalFeedback.toast.warning("连接中", "钱包连接正在进行中，请稍候...");
     return;
   }
-  await (window as WindowWithEthereum).ethereum!.request({
-    method: "wallet_addEthereumChain",
-    params: conf.params,
-  });
-  await trying();
+
+  try {
+    isConnecting = true;
+    console.log("connect");
+    const { success } = await trying();
+    if (success) return;
+    const conf = configuration();
+    if (!(window as WindowWithEthereum).ethereum) {
+      globalFeedback.toast.error(
+        "钱包未安装",
+        "请安装 MetaMask 或其他以太坊钱包"
+      );
+      return;
+    }
+    await (window as WindowWithEthereum).ethereum!.request({
+      method: "wallet_addEthereumChain",
+      params: conf.params,
+    });
+    await trying();
+  } catch (error) {
+    console.error("连接钱包失败:", error);
+    if (
+      error instanceof Error &&
+      error.message.includes("Already processing eth_requestAccounts")
+    ) {
+      globalFeedback.toast.warning(
+        "请求处理中",
+        "钱包正在处理连接请求，请稍候片刻再试"
+      );
+    } else {
+      globalFeedback.toast.error("连接失败", "钱包连接失败，请重试");
+    }
+  } finally {
+    // 延迟重置连接状态，避免用户快速重复点击
+    setTimeout(() => {
+      isConnecting = false;
+    }, 2000);
+  }
 };
 
 // 合约地址获取函数
@@ -127,6 +171,9 @@ export interface UserNFTAsset {
 export const getUserNFTAssets = async (
   userAddress?: string
 ): Promise<UserNFTAsset[]> => {
+  if (typeof window === "undefined") {
+    return [];
+  }
   try {
     const { provider, address } = await connectOnce();
     const targetAddress = userAddress || address;
@@ -264,6 +311,9 @@ export const getUserNFTAssets = async (
  * @returns 所有正在出售的NFT资产列表
  */
 export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
+  if (typeof window === "undefined") {
+    return [];
+  }
   try {
     const { provider } = await connectOnce();
     const addresses = getContractAddresses();
@@ -440,13 +490,6 @@ export const registerNFT = async (
     console.log("🚀 注册NFT - ID:", id);
 
     const contract = new ethers.Contract(addresses.nftCore, NFTCoreABI, signer);
-
-    // 检查注册费用
-    const registerFee = await contract.registerFee();
-    const paymentToken = await contract.paymentToken();
-
-    console.log("🚀 注册费用:", registerFee.toString(), "ETH");
-    console.log("🚀 支付代币:", paymentToken);
 
     // 调用注册函数
     const tx = await contract.register(id);

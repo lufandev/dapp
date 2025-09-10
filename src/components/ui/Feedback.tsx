@@ -80,15 +80,15 @@ const Toast: React.FC<{
   const getIcon = () => {
     switch (toast.type) {
       case "success":
-        return <FaCheckCircle style={{ color: "var(--success-color)" }} />;
+        return React.createElement(FaCheckCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--success-color)" } });
       case "error":
-        return <FaTimesCircle style={{ color: "var(--error-color)" }} />;
+        return React.createElement(FaTimesCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--error-color)" } });
       case "warning":
-        return <FaExclamationCircle style={{ color: "var(--warning-color)" }} />;
+        return React.createElement(FaExclamationCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--warning-color)" } });
       case "info":
-        return <FaInfoCircle style={{ color: "var(--primary-color)" }} />;
+        return React.createElement(FaInfoCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } });
       default:
-        return <FaInfoCircle style={{ color: "var(--primary-color)" }} />;
+        return React.createElement(FaInfoCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } });
     }
   };
 
@@ -145,7 +145,7 @@ const Toast: React.FC<{
           className="flex-shrink-0 text-[0.875rem] p-[4px] rounded-[4px] hover:bg-[rgba(0,0,0,0.05)] dark:hover:bg-[rgba(255,255,255,0.05)] transition-colors"
           style={{ color: "var(--tab-inactive-color)" }}
         >
-          <FaTimes />
+          {React.createElement(FaTimes as React.ComponentType)}
         </button>
       </div>
     </div>
@@ -164,12 +164,12 @@ const ConfirmDialog: React.FC<{
   const getIcon = () => {
     switch (options.type) {
       case "warning":
-        return <FaExclamationCircle style={{ color: "var(--warning-color)" }} />;
+        return React.createElement(FaExclamationCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--warning-color)" } });
       case "error":
-        return <FaTimesCircle style={{ color: "var(--error-color)" }} />;
+        return React.createElement(FaTimesCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--error-color)" } });
       case "info":
       default:
-        return <FaInfoCircle style={{ color: "var(--primary-color)" }} />;
+        return React.createElement(FaInfoCircle as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } });
     }
   };
 
@@ -413,4 +413,4 @@ export const globalFeedback = {
   },
 };
 
-export default FeedbackProvider; 
+export default FeedbackProvider;

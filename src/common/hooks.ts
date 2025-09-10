@@ -16,6 +16,32 @@ import {
   FinanceStats,
 } from "@/types";
 
+// 导出合约相关hooks
+export {
+  useContract,
+  useUserNFTs,
+  useMarketNFTs,
+  useNFTTrading,
+  useNFTManager,
+  useUserSaleList,
+  useUserRentalList,
+  useAllSaleList,
+  useAllRentalList
+} from '@/hooks/useContract';
+
+// 为了向后兼容，提供别名
+export { useUserNFTs as useUserOwnedNFTs } from '@/hooks/useContract';
+
+// 交易记录功能暂时未实现，提供空的hook
+export const useTransactionHistory = () => {
+  return {
+    transactions: [],
+    loading: false,
+    error: null,
+    refetch: () => {}
+  };
+};
+
 // ==================== 通用Hook ====================
 
 // 通用加载状态Hook
@@ -141,6 +167,7 @@ export function useValueIDs(params?: ValueIDQueryParams) {
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -170,7 +197,7 @@ export function useValueID(id: number | null) {
     try {
       setLoading(true);
       setError(null);
-      const result = await apiService.getValueIDDetail(id);
+      const result = await apiService.getValueIDDetail(id.toString());
       setData(result);
       return result;
     } catch (err) {
@@ -183,6 +210,7 @@ export function useValueID(id: number | null) {
   }, [id]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -286,6 +314,7 @@ export function useOrders(params?: OrderQueryParams) {
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -363,6 +392,7 @@ export function useTransactions(params?: TransactionQueryParams) {
   );
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -401,6 +431,7 @@ export function useTransactionStats() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -438,6 +469,7 @@ export function useWallets() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 
@@ -472,6 +504,8 @@ export function useBalance(currency: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchBalance = useCallback(async () => {
+    if (typeof window === 'undefined') return 0;
+    
     try {
       setLoading(true);
       setError(null);
@@ -488,6 +522,7 @@ export function useBalance(currency: string) {
   }, [currency]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (currency) {
       fetchBalance();
     }
@@ -551,6 +586,8 @@ export function useFinanceStats(currency?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (typeof window === 'undefined') return null;
+    
     try {
       setLoading(true);
       setError(null);
@@ -568,6 +605,7 @@ export function useFinanceStats(currency?: string) {
   }, [currency]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     fetchData();
   }, [fetchData]);
 

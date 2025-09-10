@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState } from "react";
 import locales, { Locale, Translations } from "@/data/locales";
 
 interface LocaleContextType {
@@ -22,19 +22,16 @@ export const useLocale = () => {
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [locale, setLocaleState] = useState<Locale>("en"); // 默认英语
-  const [translations, setTranslations] = useState<Translations>(locales.en);
-
-  useEffect(() => {
-    // 从本地存储中获取语言设置
-    if (typeof window !== "undefined") {
-      const savedLocale = localStorage.getItem("locale") as Locale | null;
-      if (savedLocale && (savedLocale === "en" || savedLocale === "zh")) {
-        setLocaleState(savedLocale);
-        setTranslations(locales[savedLocale]);
-      }
-    }
-  }, []);
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === 'undefined') return 'zh';
+    const savedLocale = localStorage.getItem("locale") as Locale | null;
+    return savedLocale || "zh";
+  });
+  const [translations, setTranslations] = useState<Translations>(() => {
+    if (typeof window === 'undefined') return locales.zh;
+    const savedLocale = localStorage.getItem("locale") as Locale | null;
+    return locales[savedLocale as Locale] || locales.zh;
+  });
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);

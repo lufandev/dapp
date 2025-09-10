@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { apiService, BuyOrder, CreateBuyOrderRequest } from "@/common/api";
+import { apiService, CreateBuyOrderRequest } from "@/common/api";
 import { ApiError } from "@/common/http";
+import { Order } from "@/types";
 
 const ApiExample: React.FC = () => {
-  const [orders, setOrders] = useState<BuyOrder[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,8 +14,8 @@ const ApiExample: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await apiService.getOrderList(1, 10);
-      setOrders(response.orders);
+      const response = await apiService.getOrderList({ page: 1, limit: 10 });
+      setOrders(response.data);
     } catch (err) {
       console.error("获取订单列表失败:", err);
 
@@ -59,7 +60,7 @@ const ApiExample: React.FC = () => {
   const handleLogin = async () => {
     try {
       const loginData = {
-        email: "user@example.com",
+        address: "user@example.com",
         password: "password123",
       };
 
@@ -161,9 +162,9 @@ const ApiExample: React.FC = () => {
               <div key={order.id} className="p-3 border rounded">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium">{order.name}</p>
+                    <p className="font-medium">{order.valueID.name}</p>
                     <p className="text-sm text-gray-600">
-                      {order.price} {order.currency}
+                      {order.amount} {order.currency}
                     </p>
                   </div>
                   <span

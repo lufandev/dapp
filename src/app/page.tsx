@@ -13,11 +13,7 @@ import { apiService } from "@/common/api";
 import { ValueID } from "@/types";
 // import { ethers } from "ethers";
 // import { useFeedback } from "@/components/ui/Feedback";
-import {
-  connect,
-  getAllNFTsWithSaleInfo,
-  UserNFTAsset,
-} from "@/common/connection-service";
+import { UserNFTAsset } from "@/common/connection-service";
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
@@ -35,6 +31,7 @@ export default function Home() {
   const [latestLoading, setLatestLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
   // 代币地址映射
   const getTokenSymbol = useCallback((payTokenAddress: string): string => {
     const tokenMap: Record<string, string> = {
@@ -88,6 +85,13 @@ export default function Home() {
         console.log("🚀 开始从合约加载所有出售中的NFT...");
 
         // 从合约获取所有有价格的NFT
+        if (typeof window === 'undefined') {
+          setAllValueIDs([]);
+          setLoading(false);
+          return;
+        }
+        
+        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式
@@ -109,6 +113,13 @@ export default function Home() {
         console.log("🚀 开始从合约加载推荐NFT...");
 
         // 从合约获取所有有价格的NFT
+        if (typeof window === 'undefined') {
+          setRecommendedValueIDs([]);
+          setRecommendedLoading(false);
+          return;
+        }
+        
+        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按收藏数排序（这里暂时随机排序，可以后续改进）
@@ -132,12 +143,19 @@ export default function Home() {
         console.log("🚀 开始从合约加载最新NFT...");
 
         // 从合约获取所有有价格的NFT
+        if (typeof window === 'undefined') {
+          setLatestValueIDs([]);
+          setLatestLoading(false);
+          return;
+        }
+        
+        const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按tokenId倒序排序（新的NFT通常有更大的tokenId）
         const valueIDs = nftsWithSaleInfo
           .map(convertNFTAssetToValueID)
-          .sort((a, b) => parseInt(b.tokenId) - parseInt(a.tokenId))
+          .sort((a: ValueID, b: ValueID) => parseInt(b.tokenId) - parseInt(a.tokenId))
           .slice(0, 20); // 限制20个
 
         setLatestValueIDs(valueIDs);
@@ -185,6 +203,13 @@ export default function Home() {
       console.log("🚀 刷新合约数据...");
 
       // 从合约获取所有有价格的NFT
+      if (typeof window === 'undefined') {
+        setAllValueIDs([]);
+        setLoading(false);
+        return;
+      }
+      
+      const { getAllNFTsWithSaleInfo } = await import('@/common/connection-service');
       const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
       // 转换为ValueID格式
@@ -324,13 +349,29 @@ export default function Home() {
             variant="outline"
             size="sm"
             className="flex items-center gap-[4px] bg-[#8b5cf6] text-[#ffffff] border-none px-[12px] py-[8px] rounded-[20px]"
+            disabled={isConnecting}
             onClick={async () => {
-              await connect();
+              if (typeof window !== 'undefined' && !isConnecting) {
+                try {
+                  setIsConnecting(true);
+                  const { connect } = await import('@/common/connection-service');
+                  await connect();
+                } catch (error) {
+                  console.error('连接钱包失败:', error);
+                } finally {
+                  // 延迟重置状态，避免快速重复点击
+                  setTimeout(() => {
+                    setIsConnecting(false);
+                  }, 2000);
+                }
+              }
             }}
           >
-            <FaWallet size={12} />
+            {React.createElement(FaWallet as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 12 })}
             <span className="text-xs font-medium">
-              {isAuthenticated
+              {isConnecting
+                ? "连接中..."
+                : isAuthenticated
                 ? "已连接"
                 : t("common.connectWallet") || "连接钱包"}
             </span>

@@ -6,7 +6,8 @@ import Button from "./Button";
 import Input from "./Input";
 import Modal from "./Modal";
 import { useLocale } from "../LocaleProvider";
-import { ethers } from "ethers";
+// 动态导入ethers避免服务端渲染问题
+// import { ethers } from "ethers";
 import { FaSpinner, FaCheckCircle, FaExclamationCircle } from "react-icons/fa";
 
 // 合约地址 - 您的NFT合约地址
@@ -59,6 +60,7 @@ type AdminAction = "setRegisterFee" | "setPaymentToken" | null;
 
 const ContractAdmin: React.FC = () => {
   const {} = useLocale();
+  const [isMounted, setIsMounted] = useState(false);
 
   // 状态管理
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,6 +73,11 @@ const ContractAdmin: React.FC = () => {
   const [registerFee, setRegisterFee] = useState("");
   const [tokenAddress, setTokenAddress] = useState("");
 
+  // 确保只在客户端渲染
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // 监听 currentAction 的变化
   useEffect(() => {
     if (currentAction) {
@@ -78,12 +85,18 @@ const ContractAdmin: React.FC = () => {
     }
   }, [currentAction]);
 
+  if (!isMounted) {
+    return null;
+  }
+
   // 检查是否连接了钱包并且是合约所有者
   const checkOwnership = async () => {
     if (!(window as any).ethereum) {
       throw new Error("请安装 MetaMask 钱包!");
     }
 
+    const { ethers } = await import('ethers');
+    
     const provider = new ethers.providers.Web3Provider(
       (window as any).ethereum
     );
@@ -119,6 +132,7 @@ const ContractAdmin: React.FC = () => {
       }
 
       const signer = await checkOwnership();
+      const { ethers } = await import('ethers');
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ADMIN_ABI, signer);
 
       // 将费用转换为wei (假设输入的是USDT数量，需要乘以10^6)
@@ -157,6 +171,8 @@ const ContractAdmin: React.FC = () => {
       setMessage("");
       setMessageType("");
 
+      const { ethers } = await import('ethers');
+      
       if (!tokenAddress || !ethers.utils.isAddress(tokenAddress)) {
         throw new Error("请输入有效的代币地址!");
       }
@@ -224,10 +240,10 @@ const ContractAdmin: React.FC = () => {
     if (isLoading) {
       return (
         <div className="text-center py-6">
-          <FaSpinner
-            className="mx-auto mb-4 text-4xl animate-spin"
-            style={{ color: "var(--primary-color)" }}
-          />
+          {React.createElement(FaSpinner as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
+            className: "mx-auto mb-4 text-4xl animate-spin",
+            style: { color: "var(--primary-color)" }
+          })}
           <p style={{ color: "var(--foreground)" }}>正在处理交易...</p>
         </div>
       );
@@ -237,15 +253,15 @@ const ContractAdmin: React.FC = () => {
       return (
         <div className="text-center py-6">
           {messageType === "success" ? (
-            <FaCheckCircle
-              className="mx-auto mb-4 text-4xl"
-              style={{ color: "#10b981" }}
-            />
+            React.createElement(FaCheckCircle as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
+              className: "mx-auto mb-4 text-4xl",
+              style: { color: "#10b981" }
+            })
           ) : (
-            <FaExclamationCircle
-              className="mx-auto mb-4 text-4xl"
-              style={{ color: "#ef4444" }}
-            />
+            React.createElement(FaExclamationCircle as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
+              className: "mx-auto mb-4 text-4xl",
+              style: { color: "#ef4444" }
+            })
           )}
           <p style={{ color: "var(--foreground)" }}>{message}</p>
         </div>

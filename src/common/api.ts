@@ -116,9 +116,11 @@ class ApiService {
 
     // 注册成功后设置token
     if (response.access_token) {
-      httpClient.setAuthToken(response.access_token);
-      localStorage.setItem("auth_token", response.access_token);
-    }
+        httpClient.setAuthToken(response.access_token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("auth_token", response.access_token);
+        }
+      }
 
     return response;
   }
@@ -133,7 +135,9 @@ class ApiService {
     // 登录成功后设置token
     if (response.access_token) {
       httpClient.setAuthToken(response.access_token);
-      localStorage.setItem("auth_token", response.access_token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("auth_token", response.access_token);
+      }
     }
 
     return response;
@@ -149,7 +153,9 @@ class ApiService {
     // 登录成功后设置token
     if (response.access_token) {
       httpClient.setAuthToken(response.access_token);
-      localStorage.setItem("auth_token", response.access_token);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem("auth_token", response.access_token);
+      }
     }
 
     return response;
@@ -552,6 +558,7 @@ class ApiService {
 
   // 初始化认证状态
   initializeAuth(): void {
+    if (typeof window === 'undefined') return;
     const token = localStorage.getItem("auth_token");
     if (token) {
       httpClient.setAuthToken(token);
@@ -560,13 +567,16 @@ class ApiService {
 
   // 检查是否已认证
   isAuthenticated(): boolean {
+    if (typeof window === 'undefined') return false;
     return !!localStorage.getItem("auth_token");
   }
 
   // 退出登录
   logout(): void {
     httpClient.clearAuthToken();
-    localStorage.removeItem("auth_token");
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem("auth_token");
+    }
   }
 
   // ==================== 兼容性方法（保持旧代码工作） ====================

@@ -34,14 +34,14 @@ const TabBar: React.FC = () => {
             }`}
             onClick={() => handleTabClick(tab.path)}
           >
-            <Icon
-              className={`text-[1.5rem] mb-[4px]`}
-              style={{
+            {React.createElement(Icon as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
+              className: `text-[1.5rem] mb-[4px]`,
+              style: {
                 color: isActive
                   ? "var(--tab-active-color)"
                   : "var(--tab-inactive-color)",
-              }}
-            />
+              }
+            })}
             <span
               className={`${isActive ? "font-[600]" : "font-[400]"}`}
               style={{

@@ -37,7 +37,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ onSearch, placeholder }) => {
         className="absolute right-[12px] top-[50%] translate-y-[-50%]"
         style={{ color: "var(--tab-inactive-color)" }}
       >
-        <FaSearch />
+        {React.createElement(FaSearch as React.ComponentType, {})}
       </button>
     </form>
   );

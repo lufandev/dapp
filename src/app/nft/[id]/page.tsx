@@ -15,12 +15,13 @@ import { FaArrowLeft, FaHeart, FaRegHeart } from "react-icons/fa";
 import { useLocale } from "@/components/LocaleProvider";
 import { useFeedback } from "@/components/ui/Feedback";
 import { ValueID } from "@/types";
-import {
-  connectOnce,
-  listNFTForSale,
-  cancelNFTSale,
-  buyNFTFromSale,
-} from "@/common/connection-service";
+// 动态导入connection-service避免服务端渲染问题
+// import {
+//   connectOnce,
+//   listNFTForSale,
+//   cancelNFTSale,
+//   buyNFTFromSale,
+// } from "@/common/connection-service";
 import { ethers } from "ethers";
 // 支付币种选项 - 只支持ETH
 const currencyOptions = [{ value: "ETH", label: "currency.eth" }];
@@ -43,7 +44,7 @@ export default function NFTDetailPage() {
       // 检查是否从列表页面跳转过来，如果是，优先使用 sessionStorage 中的数据
       if (fromList === "true") {
         const storageKey = `nft_data_${id}`;
-        const cachedData = sessionStorage.getItem(storageKey);
+        const cachedData = typeof window !== 'undefined' ? sessionStorage.getItem(storageKey) : null;
 
         if (cachedData) {
           try {
@@ -52,7 +53,9 @@ export default function NFTDetailPage() {
             setValueId(parsedData);
 
             // 使用完后清理缓存
-            sessionStorage.removeItem(storageKey);
+            if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(storageKey);
+      }
             return;
           } catch (error) {
             console.error("🚀 解析缓存数据失败:", error);
@@ -78,9 +81,12 @@ export default function NFTDetailPage() {
       // const response = await apiService.getUserProfile(1);
       // setUser(response);
       // console.log(response);
-      const { address } = await connectOnce();
-      setUserAddress(address);
-      setSellAddress(address); // 设置收款地址为当前用户钱包地址
+      if (typeof window !== 'undefined') {
+        const { connectOnce } = await import('@/common/connection-service');
+        const { address } = await connectOnce();
+        setUserAddress(address);
+        setSellAddress(address); // 设置收款地址为当前用户钱包地址
+      }
     };
     loadData();
   }, []);
@@ -168,6 +174,11 @@ export default function NFTDetailPage() {
         });
 
         // 调用NFTSale合约的listForSale方法
+        if (typeof window === 'undefined') {
+          throw new Error('客户端环境不可用');
+        }
+        
+        const { listNFTForSale } = await import('@/common/connection-service');
         const txHash = await listNFTForSale(
           valueId.tokenId,
           sellPrice // 直接传入ETH价格字符串
@@ -241,6 +252,11 @@ export default function NFTDetailPage() {
         console.log("🚀 参数:", { tokenId: valueId.tokenId });
 
         // 调用NFTSale合约的cancelSale方法
+        if (typeof window === 'undefined') {
+          throw new Error('客户端环境不可用');
+        }
+        
+        const { cancelNFTSale } = await import('@/common/connection-service');
         const txHash = await cancelNFTSale(valueId.tokenId);
 
         console.log("🚀 取消挂售交易哈希:", txHash);
@@ -288,7 +304,7 @@ export default function NFTDetailPage() {
               className="mr-[8px] text-[1.25rem]"
               onClick={() => router.back()}
             >
-              <FaArrowLeft />
+              {React.createElement(FaArrowLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)}
             </button>
             <h1 className="text-[1.25rem] font-[700]">{t("nft.detail")}</h1>
           </div>
@@ -334,16 +350,16 @@ export default function NFTDetailPage() {
               className="w-[40px] h-[40px] rounded-[9999px] bg-[rgba(0,0,0,0.5)] text-[#ffffff] flex items-center justify-center"
               onClick={() => router.back()}
             >
-              <FaArrowLeft />
+              {React.createElement(FaArrowLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)}
             </button>
             <button
               className="w-[40px] h-[40px] rounded-[9999px] bg-[rgba(0,0,0,0.5)] text-[#ffffff] flex items-center justify-center"
               onClick={handleToggleFavorite}
             >
               {isFavorite ? (
-                <FaHeart className="text-[#ff4d4f]" />
+                React.createElement(FaHeart as React.ComponentType<{ className?: string }>, { className: "text-[#ff4d4f]" })
               ) : (
-                <FaRegHeart />
+                React.createElement(FaRegHeart as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)
               )}
             </button>
           </div>
@@ -615,6 +631,11 @@ export default function NFTDetailPage() {
                             });
 
                             // 调用合约的buy方法
+                            if (typeof window === 'undefined') {
+                              throw new Error('客户端环境不可用');
+                            }
+                            
+                            const { buyNFTFromSale } = await import('@/common/connection-service');
                             const txHash = await buyNFTFromSale(
                               valueId.tokenId
                             );
@@ -688,6 +709,11 @@ export default function NFTDetailPage() {
                             });
 
                             // 调用合约的buy方法
+                            if (typeof window === 'undefined') {
+                              throw new Error('客户端环境不可用');
+                            }
+                            
+                            const { buyNFTFromSale } = await import('@/common/connection-service');
                             const txHash = await buyNFTFromSale(
                               valueId.tokenId
                             );

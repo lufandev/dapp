@@ -67,7 +67,7 @@ export default function SellOrderDetailPage({
               className="mr-[8px] text-[1.25rem]"
               onClick={() => router.back()}
             >
-              <FaArrowLeft />
+              {React.createElement(FaArrowLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)}
             </button>
             <h1
               className="text-[1.25rem] font-[700]"
@@ -156,7 +156,7 @@ export default function SellOrderDetailPage({
             className="mr-[8px] text-[1.25rem]"
             onClick={() => router.back()}
           >
-            <FaArrowLeft />
+            {React.createElement(FaArrowLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>)}
           </button>
           <h1
             className="text-[1.25rem] font-[700]"
