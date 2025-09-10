@@ -73,18 +73,7 @@ try {
 }
 ```
 
-### 获取用户注册的 ID
-
-```typescript
-import { getUserRegisteredIDs } from "@/common/connection-service";
-
-// 获取当前用户注册的所有ID
-const userIDs = await getUserRegisteredIDs();
-console.log("用户注册的ID:", userIDs);
-
-// 获取指定用户注册的ID
-const specificUserIDs = await getUserRegisteredIDs("0x123...");
-```
+````
 
 ### NFT 出售功能
 
@@ -111,7 +100,7 @@ if (saleInfo) {
   console.log("卖家:", saleInfo.seller);
   console.log("价格:", saleInfo.priceInEth, "ETH");
 }
-```
+````
 
 ### NFT 租赁功能
 
