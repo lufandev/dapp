@@ -39,9 +39,15 @@ export default function ProfilePage() {
   const router = useRouter();
   const { t, locale, setLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   // 模态框状态
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+
+  // 确保组件已挂载，避免水合不匹配
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 轮播图状态
   const [currentBanner, setCurrentBanner] = useState(0);
@@ -175,8 +181,8 @@ export default function ProfilePage() {
       extra: locale === "en" ? t("language.english") : t("language.chinese"),
     },
     {
-      icon:
-        theme === "light"
+      icon: mounted
+        ? (theme === "light"
           ? React.createElement(
               FaMoon as React.ComponentType<{ style?: React.CSSProperties }>,
               { style: { color: "var(--primary-color)" } }
@@ -184,10 +190,14 @@ export default function ProfilePage() {
           : React.createElement(
               FaSun as React.ComponentType<{ style?: React.CSSProperties }>,
               { style: { color: "var(--primary-color)" } }
-            ),
+            ))
+        : React.createElement(
+            FaMoon as React.ComponentType<{ style?: React.CSSProperties }>,
+            { style: { color: "var(--primary-color)" } }
+          ),
       title: t("profile.theme"),
       onClick: handleThemeChange,
-      extra: theme === "light" ? t("theme.light") : t("theme.dark"),
+      extra: mounted ? (theme === "light" ? t("theme.light") : t("theme.dark")) : t("theme.light"),
     },
     // 如果需要添加更多菜单项，可以取消下面的注释
     // {

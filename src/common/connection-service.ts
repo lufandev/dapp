@@ -22,9 +22,11 @@ interface WindowWithEthereum extends Window {
 
 interface LogEvent {
   args: {
-    user: string;
+    account: string;
+    id: string;
     tokenId: ethers.BigNumber;
-    finalID: string;
+    amount: ethers.BigNumber;
+    nftAddr: string;
   };
   blockNumber: number;
   transactionHash: string;
@@ -183,16 +185,30 @@ export const getUserNFTAssets = async (
     console.log("🚀 用户地址:", targetAddress);
     console.log("🚀 NFTCore合约地址:", addresses.nftCore);
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredABI = IDNFTABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+
     // 创建NFTCore合约实例
     const nftCoreContract = new ethers.Contract(
       addresses.nftCore,
-      IDNFTABI,
+      filteredABI,
       provider
     );
 
-    // 获取用户的注册事件
-    const filter = nftCoreContract.filters.Registered(targetAddress);
-    const logs = await nftCoreContract.queryFilter(filter, 0, "latest");
+    // 获取所有IDNFTMint事件（因为account参数不是索引参数，无法直接过滤）
+    const filter = nftCoreContract.filters.IDNFTMint();
+    const allLogs = await nftCoreContract.queryFilter(filter, 0, "latest");
+
+    // 手动过滤用户相关的事件
+    const logs = allLogs.filter((log: unknown) => {
+      const logEvent = log as LogEvent;
+      return (
+        logEvent.args.account.toLowerCase() === targetAddress.toLowerCase()
+      );
+    });
 
     console.log(`🚀 找到 ${logs.length} 条注册记录`);
 
@@ -209,7 +225,7 @@ export const getUserNFTAssets = async (
         const logEvent = log as unknown as LogEvent;
 
         const tokenIdString = logEvent.args.tokenId.toString();
-        const finalID = logEvent.args.finalID;
+        const finalID = logEvent.args.id;
 
         console.log(
           `🚀 第${
@@ -217,27 +233,10 @@ export const getUserNFTAssets = async (
           }个NFT - Token ID: ${tokenIdString}, Final ID: ${finalID}`
         );
 
-        // 检查用户是否仍然拥有这个NFT（可能已经转出）
-        let currentOwner;
-        try {
-          currentOwner = await nftCoreContract.ownerOf(tokenIdString);
-        } catch (error) {
-          console.log(`🚀 NFT #${tokenIdString} 可能已被销毁，跳过`, error);
-          continue;
-        }
-
-        // 只返回用户当前拥有的NFT
-        if (currentOwner.toLowerCase() !== targetAddress.toLowerCase()) {
-          console.log(
-            `🚀 NFT #${tokenIdString} 已转给其他用户: ${currentOwner}，跳过`
-          );
-          continue;
-        }
-
         // 获取tokenURI
         let tokenURI;
         try {
-          tokenURI = await nftCoreContract.tokenURI(tokenIdString);
+          tokenURI = await nftCoreContract.uri(tokenIdString);
         } catch (error) {
           console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
           tokenURI = finalID; // 使用finalID作为备用
@@ -358,8 +357,15 @@ export const registerNFT = async (
     console.log("🚀 注册NFT - ID:", id, addresses.nftCore, signer);
 
     // 过滤ABI，只保留函数定义，排除错误定义
-    const filteredABI = IDNFTABI.filter((item: { type: string }) => item.type === 'function' || item.type === 'event');
-    const contract = new ethers.Contract(addresses.nftCore, filteredABI, signer);
+    const filteredABI = IDNFTABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+    const contract = new ethers.Contract(
+      addresses.nftCore,
+      filteredABI,
+      signer
+    );
 
     // 调用mint函数铸造NFT
     console.log("🚀 ~ registerNFT ~ userAddress:", address);
@@ -375,11 +381,11 @@ export const registerNFT = async (
     // 从事件日志中获取tokenId
     let tokenId;
     if (receipt.events) {
-      const registeredEvent = receipt.events.find(
-        (event: unknown) => (event as TransactionEvent).event === "Registered"
+      const mintEvent = receipt.events.find(
+        (event: unknown) => (event as TransactionEvent).event === "IDNFTMint"
       );
-      if (registeredEvent) {
-        tokenId = registeredEvent.args.tokenId.toString();
+      if (mintEvent) {
+        tokenId = mintEvent.args.tokenId.toString();
       }
     }
 
@@ -432,17 +438,35 @@ export const getUserRegisteredIDs = async (
 
     console.log("🚀 获取用户注册的ID - 地址:", targetAddress);
 
-    const contract = new ethers.Contract(addresses.nftCore, IDNFTABI, provider);
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredABI = IDNFTABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
 
-    // 通过事件日志获取注册记录
-    const filter = contract.filters.Registered(targetAddress);
-    const logs = await contract.queryFilter(filter, 0, "latest");
+    const contract = new ethers.Contract(
+      addresses.nftCore,
+      filteredABI,
+      provider
+    );
+
+    // 获取所有IDNFTMint事件（因为account参数不是索引参数，无法直接过滤）
+    const filter = contract.filters.IDNFTMint();
+    const allLogs = await contract.queryFilter(filter, 0, "latest");
+
+    // 手动过滤用户相关的事件
+    const logs = allLogs.filter((log: unknown) => {
+      const logEvent = log as LogEvent;
+      return (
+        logEvent.args.account.toLowerCase() === targetAddress.toLowerCase()
+      );
+    });
 
     const registrations = logs.map((log: unknown) => {
       const logEvent = log as LogEvent;
       return {
         tokenId: logEvent.args.tokenId.toString(),
-        finalID: logEvent.args.finalID,
+        finalID: logEvent.args.id,
         blockNumber: logEvent.blockNumber,
         transactionHash: logEvent.transactionHash,
       };
@@ -471,7 +495,17 @@ export const getAllRegisteredIDs = async (
     const { provider } = await connectOnce();
     const addresses = getContractAddresses();
 
-    const contract = new ethers.Contract(addresses.nftCore, IDNFTABI, provider);
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredABI = IDNFTABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+
+    const contract = new ethers.Contract(
+      addresses.nftCore,
+      filteredABI,
+      provider
+    );
     const ids = await contract.getIDsPaginated(offset, limit);
 
     console.log(

@@ -23,14 +23,20 @@ export const useTheme = () => {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'light';
-    const savedTheme = localStorage.getItem("theme") as Theme | null;
-    return savedTheme || "light";
-  });
+  const [theme, setThemeState] = useState<Theme>('light');
 
   useEffect(() => {
-    // 从本地存储中获取主题设置
+    // 客户端水合后从localStorage读取主题
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("theme") as Theme | null;
+      if (savedTheme && savedTheme !== theme) {
+        setThemeState(savedTheme);
+      }
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    // 设置主题到DOM
     if (typeof window !== "undefined") {
       document.documentElement.setAttribute("data-theme", theme);
     }
