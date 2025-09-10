@@ -109,54 +109,82 @@ export default function ProfilePage() {
 
   const menuItems = [
     {
-      icon: React.createElement(FaQrcode as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaQrcode as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.registerID"),
       onClick: () => setIsRegisterModalOpen(true),
     },
     {
-      icon: React.createElement(FaWallet as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaWallet as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.walletBalance"),
       extra: "5,836.00 USDT",
       onClick: () => router.push("/finance"),
     },
     {
-      icon: React.createElement(FaShieldAlt as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaShieldAlt as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.platformAuth"),
       onClick: () => alert(t("profile.platformAuth")),
     },
     {
-      icon: React.createElement(FaShoppingBag as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaShoppingBag as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.sellOrders"),
       onClick: () => router.push("/orders/sell"),
     },
     {
-      icon: React.createElement(FaExchangeAlt as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaExchangeAlt as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.rentalOrders"),
       onClick: () => router.push("/orders/rental"),
     },
     {
-      icon: React.createElement(FaShoppingCart as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaShoppingCart as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.buyOrders"),
       onClick: () => router.push("/orders/buy"),
     },
     {
-      icon: React.createElement(FaHandshake as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaHandshake as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.leaseOrders"),
       onClick: () => router.push("/orders/lease"),
     },
     {
-      icon: React.createElement(FaLanguage as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } }),
+      icon: React.createElement(
+        FaLanguage as React.ComponentType<{ style?: React.CSSProperties }>,
+        { style: { color: "var(--primary-color)" } }
+      ),
       title: t("profile.language"),
       onClick: handleLanguageChange,
       extra: locale === "en" ? t("language.english") : t("language.chinese"),
     },
     {
       icon:
-        theme === "light" ? (
-          React.createElement(FaMoon as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } })
-        ) : (
-          React.createElement(FaSun as React.ComponentType<{ style?: React.CSSProperties }>, { style: { color: "var(--primary-color)" } })
-        ),
+        theme === "light"
+          ? React.createElement(
+              FaMoon as React.ComponentType<{ style?: React.CSSProperties }>,
+              { style: { color: "var(--primary-color)" } }
+            )
+          : React.createElement(
+              FaSun as React.ComponentType<{ style?: React.CSSProperties }>,
+              { style: { color: "var(--primary-color)" } }
+            ),
       title: t("profile.theme"),
       onClick: handleThemeChange,
       extra: theme === "light" ? t("theme.light") : t("theme.dark"),
@@ -343,7 +371,13 @@ export default function ProfilePage() {
                 prevBanner();
               }}
             >
-              {React.createElement(FaChevronLeft as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14 })}
+              {React.createElement(
+                FaChevronLeft as React.ComponentType<{
+                  size?: number;
+                  style?: React.CSSProperties;
+                }>,
+                { size: 14 }
+              )}
             </button>
 
             <button
@@ -353,7 +387,13 @@ export default function ProfilePage() {
                 nextBanner();
               }}
             >
-              {React.createElement(FaChevronRight as React.ComponentType<{ size?: number; style?: React.CSSProperties }>, { size: 14 })}
+              {React.createElement(
+                FaChevronRight as React.ComponentType<{
+                  size?: number;
+                  style?: React.CSSProperties;
+                }>,
+                { size: 14 }
+              )}
             </button>
 
             {/* 指示器 */}

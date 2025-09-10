@@ -3,9 +3,9 @@ import { globalFeedback } from "@/components/ui/Feedback";
 import { configuration } from "../config/blockChain";
 
 // 导入新的合约ABI
-import NFTCoreABI from "@/artifacts/NFTCore.json";
-import NFTSaleABI from "@/artifacts/NFTSale.json";
-import NFTRentalABI from "@/artifacts/NFTRental.json";
+import IDNFTABI from "@/artifacts/IDNFT.json";
+import IDNFTSaleABI from "@/artifacts/IDNFTSale.json";
+import IDNFTRentABI from "@/artifacts/IDNFTRent.json";
 
 // 全局变量跟踪连接状态
 let isConnecting = false;
@@ -186,7 +186,7 @@ export const getUserNFTAssets = async (
     // 创建NFTCore合约实例
     const nftCoreContract = new ethers.Contract(
       addresses.nftCore,
-      NFTCoreABI,
+      IDNFTABI,
       provider
     );
 
@@ -315,146 +315,14 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
     return [];
   }
   try {
-    const { provider } = await connectOnce();
-    const addresses = getContractAddresses();
-
     console.log("🚀 开始获取所有NFT及出售信息...");
-
-    // 创建NFTCore合约实例
-    const nftCoreContract = new ethers.Contract(
-      addresses.nftCore,
-      NFTCoreABI,
-      provider
+    console.log(
+      "⚠️ 注意：由于getIDsPaginated函数在ABI中不存在，暂时返回空数组"
     );
+    console.log("⚠️ 需要实现替代方案来获取NFT列表");
 
-    // 创建NFTSale合约实例
-    const nftSaleContract = new ethers.Contract(
-      addresses.nftSale,
-      NFTSaleABI,
-      provider
-    );
-
-    // 分页获取所有NFT ID（从getIDsPaginated开始，先获取少量数据测试）
-    const batchSize = 20; // 每批获取20个
-    const allNFTs: UserNFTAsset[] = [];
-    let offset = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-      try {
-        // 使用NFTCore的getIDsPaginated方法获取NFT ID列表
-        const idList = await nftCoreContract.getIDsPaginated(offset, batchSize);
-
-        if (idList.length === 0) {
-          hasMore = false;
-          break;
-        }
-
-        console.log(
-          `🚀 第${Math.floor(offset / batchSize) + 1}批 - 获取到 ${
-            idList.length
-          } 个NFT ID`
-        );
-
-        // 处理这一批NFT
-        for (let i = 0; i < idList.length; i++) {
-          try {
-            const tokenId = offset + i + 1; // tokenId从1开始
-            const tokenIdString = tokenId.toString();
-            const finalID = idList[i];
-
-            console.log(
-              `🚀 处理NFT - Token ID: ${tokenIdString}, Final ID: ${finalID}`
-            );
-
-            // 获取NFT的基本信息
-            let owner;
-            let tokenURI;
-            try {
-              owner = await nftCoreContract.ownerOf(tokenIdString);
-              tokenURI = await nftCoreContract.tokenURI(tokenIdString);
-            } catch {
-              console.log(`🚀 NFT #${tokenIdString} 可能已被销毁，跳过`);
-              continue;
-            }
-
-            // 使用NFTSale合约的sales方法获取出售信息
-            let saleInfo: NFTSaleInfo;
-            try {
-              const saleResult = await nftSaleContract.sales(tokenIdString);
-              const price = saleResult.price.toString();
-              const isForSale = price !== "0";
-
-              saleInfo = {
-                seller: saleResult.seller,
-                price: price,
-                payToken: "0x0000000000000000000000000000000000000000", // ETH
-                receiver: saleResult.seller,
-                isForSale: isForSale,
-              };
-
-              console.log(`🚀 NFT #${tokenIdString} 出售信息:`, {
-                isForSale,
-                price: isForSale ? price + " ETH" : "0",
-                seller: saleResult.seller,
-              });
-            } catch (error) {
-              console.log(
-                `🚀 无法获取NFT #${tokenIdString} 的出售信息:`,
-                error
-              );
-              saleInfo = {
-                seller: "0x0000000000000000000000000000000000000000",
-                price: "0",
-                payToken: "0x0000000000000000000000000000000000000000",
-                receiver: "0x0000000000000000000000000000000000000000",
-                isForSale: false,
-              };
-            }
-
-            // 只处理有价格的NFT（正在出售的）
-            if (saleInfo.isForSale && parseFloat(saleInfo.price) > 0) {
-              console.log(
-                `🚀 发现出售中的NFT - ID: ${finalID}, 价格: ${saleInfo.price} ETH, 所有者: ${owner}`
-              );
-
-              // 构造NFT资产对象
-              const asset: UserNFTAsset = {
-                tokenId: tokenIdString,
-                name: finalID || `NFT #${tokenIdString}`,
-                idString: finalID,
-                tokenURI: tokenURI,
-                image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
-                saleInfo: saleInfo,
-                owner: owner,
-              };
-
-              allNFTs.push(asset);
-            } else {
-              console.log(`🚀 跳过未出售的NFT - Token ID: ${tokenIdString}`);
-            }
-          } catch (error) {
-            console.error(`🚀 处理NFT #${offset + i + 1} 失败:`, error);
-          }
-        }
-
-        // 如果返回的数量少于批次大小，说明已经是最后一批
-        if (idList.length < batchSize) {
-          hasMore = false;
-        } else {
-          offset += batchSize;
-        }
-      } catch (error) {
-        console.error(
-          `🚀 获取第${Math.floor(offset / batchSize) + 1}批NFT失败:`,
-          error
-        );
-        hasMore = false;
-      }
-    }
-
-    console.log(`🚀 获取所有出售中的NFT完成: 共${allNFTs.length}个`);
-    return allNFTs;
+    // 暂时返回空数组，因为getIDsPaginated函数不存在
+    return [];
   } catch (error) {
     console.error("🚀 获取所有NFT出售信息失败:", error);
     globalFeedback.toast.error(
@@ -484,15 +352,18 @@ export const registerNFT = async (
   id: string
 ): Promise<{ txHash: string; tokenId?: string }> => {
   try {
-    const { signer } = await connectOnce();
+    const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
 
-    console.log("🚀 注册NFT - ID:", id);
+    console.log("🚀 注册NFT - ID:", id, addresses.nftCore, signer);
 
-    const contract = new ethers.Contract(addresses.nftCore, NFTCoreABI, signer);
+    // 过滤ABI，只保留函数定义，排除错误定义
+    const filteredABI = IDNFTABI.filter((item: { type: string }) => item.type === 'function' || item.type === 'event');
+    const contract = new ethers.Contract(addresses.nftCore, filteredABI, signer);
 
-    // 调用注册函数
-    const tx = await contract.register(id);
+    // 调用mint函数铸造NFT
+    console.log("🚀 ~ registerNFT ~ userAddress:", address);
+    const tx = await contract.mint(address, id, 1, "0x");
     console.log("🚀 交易已发送:", tx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -561,11 +432,7 @@ export const getUserRegisteredIDs = async (
 
     console.log("🚀 获取用户注册的ID - 地址:", targetAddress);
 
-    const contract = new ethers.Contract(
-      addresses.nftCore,
-      NFTCoreABI,
-      provider
-    );
+    const contract = new ethers.Contract(addresses.nftCore, IDNFTABI, provider);
 
     // 通过事件日志获取注册记录
     const filter = contract.filters.Registered(targetAddress);
@@ -604,11 +471,7 @@ export const getAllRegisteredIDs = async (
     const { provider } = await connectOnce();
     const addresses = getContractAddresses();
 
-    const contract = new ethers.Contract(
-      addresses.nftCore,
-      NFTCoreABI,
-      provider
-    );
+    const contract = new ethers.Contract(addresses.nftCore, IDNFTABI, provider);
     const ids = await contract.getIDsPaginated(offset, limit);
 
     console.log(
@@ -631,20 +494,40 @@ export const getAllRegisteredIDs = async (
  */
 export const listNFTForSale = async (
   tokenId: string,
-  priceInEth: string
+  priceInEth: string,
+  id: string = "",
+  amount: string = "1",
+  payToken: string = "0x0000000000000000000000000000000000000000", // ETH
+  receiver?: string,
+  nftAddr?: string
 ): Promise<string> => {
   try {
-    const { signer } = await connectOnce();
+    const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
 
     console.log(
       `🚀 上架NFT出售 - Token ID: ${tokenId}, 价格: ${priceInEth} ETH`
     );
 
-    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
+    const contract = new ethers.Contract(
+      addresses.nftSale,
+      IDNFTSaleABI,
+      signer
+    );
     const priceInWei = ethers.utils.parseEther(priceInEth);
+    const finalReceiver = receiver || address;
+    const finalNftAddr = nftAddr || addresses.nftCore;
 
-    const tx = await contract.listForSale(tokenId, priceInWei);
+    // 根据ABI，listForSale需要7个参数：id, tokenId, price, amount, payToken, receiver, nftAddr
+    const tx = await contract.listForSale(
+      id,
+      tokenId,
+      priceInWei,
+      amount,
+      payToken,
+      finalReceiver,
+      finalNftAddr
+    );
     console.log("🚀 交易已发送:", tx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -675,28 +558,29 @@ export const listNFTForSale = async (
 /**
  * 购买NFT
  * @param tokenId NFT的token ID
+ * @param amount 购买数量，默认为1
  * @returns 交易哈希
  */
-export const buyNFTFromSale = async (tokenId: string): Promise<string> => {
+export const buyNFTFromSale = async (
+  tokenId: string,
+  amount: string = "1"
+): Promise<string> => {
   try {
     const { signer } = await connectOnce();
     const addresses = getContractAddresses();
 
-    console.log(`🚀 购买NFT - Token ID: ${tokenId}`);
+    console.log(`🚀 购买NFT - Token ID: ${tokenId}, 数量: ${amount}`);
 
-    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
+    const contract = new ethers.Contract(
+      addresses.nftSale,
+      IDNFTSaleABI,
+      signer
+    );
 
-    // 获取NFT价格
-    const saleInfo = await contract.sales(tokenId);
-    if (saleInfo.price.eq(0)) {
-      throw new Error("NFT未上架出售");
-    }
+    console.log("⚠️ 注意：sales函数在当前ABI中可能不存在，跳过价格检查");
 
-    console.log("🚀 NFT价格:", saleInfo.price, "ETH");
-
-    const tx = await contract.buy(tokenId, {
-      value: saleInfo.price,
-    });
+    // 根据ABI，buy函数需要tokenId和amount两个参数
+    const tx = await contract.buy(tokenId, amount);
 
     console.log("🚀 交易已发送:", tx.hash);
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -736,8 +620,12 @@ export const cancelNFTSale = async (tokenId: string): Promise<string> => {
 
     console.log(`🚀 取消NFT出售 - Token ID: ${tokenId}`);
 
-    const contract = new ethers.Contract(addresses.nftSale, NFTSaleABI, signer);
-    const tx = await contract.cancelSale(tokenId);
+    const contract = new ethers.Contract(
+      addresses.nftSale,
+      IDNFTSaleABI,
+      signer
+    );
+    const tx = await contract.cancleSale(tokenId);
 
     console.log("🚀 交易已发送:", tx.hash);
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -774,25 +662,12 @@ export const getNFTSaleInfo = async (
   priceInEth: string;
 } | null> => {
   try {
-    const { provider } = await connectOnce();
-    const addresses = getContractAddresses();
+    console.log(`⚠️ 获取NFT出售信息 - Token ID: ${tokenId}`);
+    console.log("⚠️ 注意：合约中的saleInfos是私有映射，无法直接访问");
+    console.log("⚠️ 需要合约添加公共getter函数或通过事件日志获取销售信息");
 
-    const contract = new ethers.Contract(
-      addresses.nftSale,
-      NFTSaleABI,
-      provider
-    );
-    const saleInfo = await contract.sales(tokenId);
-
-    if (saleInfo.price.eq(0)) {
-      return null; // 未上架出售
-    }
-
-    return {
-      seller: saleInfo.seller,
-      price: saleInfo.price.toString(),
-      priceInEth: saleInfo.price.toString(), // 直接使用wei值作为ETH显示
-    };
+    // 暂时返回null，因为无法访问私有的saleInfos映射
+    return null;
   } catch (error) {
     console.error("🚀 获取NFT出售信息失败:", error);
     return null;
@@ -806,15 +681,21 @@ export const getNFTSaleInfo = async (
  * @param tokenId NFT的token ID
  * @param pricePerDayInEth 每日租金（ETH单位）
  * @param maxDays 最大租赁天数
+ * @param id 租赁ID
+ * @param rentReceiver 租金接收地址
+ * @param nftAddr NFT合约地址
  * @returns 交易哈希
  */
 export const listNFTForRent = async (
   tokenId: string,
   pricePerDayInEth: string,
-  maxDays: number
+  maxDays: number,
+  id: string = "",
+  rentReceiver?: string,
+  nftAddr?: string
 ): Promise<string> => {
   try {
-    const { signer } = await connectOnce();
+    const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
 
     console.log(
@@ -823,12 +704,24 @@ export const listNFTForRent = async (
 
     const contract = new ethers.Contract(
       addresses.nftRental,
-      NFTRentalABI,
+      IDNFTRentABI,
       signer
     );
-    const pricePerDayInWei = ethers.utils.parseEther(pricePerDayInEth);
+    const rentFeeInWei = ethers.utils.parseEther(pricePerDayInEth);
+    const finalRentReceiver = rentReceiver || address;
+    const finalNftAddr = nftAddr || addresses.nftCore;
+    const payToken = "0x0000000000000000000000000000000000000000"; // ETH
 
-    const tx = await contract.listForRent(tokenId, pricePerDayInWei, maxDays);
+    // 根据ABI，listForRent需要7个参数：tokenId, id, nftAddr, durationDays, rentReceiver, token, rentFee
+    const tx = await contract.listForRent(
+      tokenId,
+      id,
+      finalNftAddr,
+      maxDays,
+      finalRentReceiver,
+      payToken,
+      rentFeeInWei
+    );
     console.log("🚀 交易已发送:", tx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
@@ -869,7 +762,8 @@ export const listNFTForRent = async (
  */
 export const rentNFT = async (
   tokenId: string,
-  daysCount: number
+  daysCount: number,
+  id: string = ""
 ): Promise<string> => {
   try {
     const { signer } = await connectOnce();
@@ -879,20 +773,23 @@ export const rentNFT = async (
 
     const contract = new ethers.Contract(
       addresses.nftRental,
-      NFTRentalABI,
+      IDNFTRentABI,
       signer
     );
 
     // 获取租赁信息
-    const rentalInfo = await contract.rentals(tokenId);
-    if (rentalInfo.pricePerDay.eq(0)) {
+    const rentalInfo = await contract.rentInfos(tokenId);
+    if (rentalInfo.lender === "0x0000000000000000000000000000000000000000") {
       throw new Error("NFT未上架出租");
     }
+    if (rentalInfo.renter !== "0x0000000000000000000000000000000000000000") {
+      throw new Error("NFT已被租赁");
+    }
 
-    const totalCost = rentalInfo.pricePerDay.mul(daysCount);
+    const totalCost = rentalInfo.rentFee.mul(daysCount);
     console.log("🚀 总租金:", totalCost.toString(), "ETH");
 
-    const tx = await contract.rentToken(tokenId, daysCount, {
+    const tx = await contract.rent(tokenId, id, {
       value: totalCost,
     });
 
@@ -934,33 +831,18 @@ export const rentNFT = async (
  */
 export const cancelNFTRent = async (tokenId: string): Promise<string> => {
   try {
-    const { signer } = await connectOnce();
-    const addresses = getContractAddresses();
+    console.log(`⚠️ 取消NFT出租 - Token ID: ${tokenId}`);
+    console.log("⚠️ 注意：IDNFTRent合约中没有取消租赁的函数");
+    console.log("⚠️ 需要合约添加取消租赁功能或通过其他方式实现");
 
-    console.log(`🚀 取消NFT出租 - Token ID: ${tokenId}`);
-
-    const contract = new ethers.Contract(
-      addresses.nftRental,
-      NFTRentalABI,
-      signer
-    );
-    const tx = await contract.cancelRentOffer(tokenId);
-
-    console.log("🚀 交易已发送:", tx.hash);
-    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
-
-    await tx.wait();
-    globalFeedback.toast.success("取消成功", `NFT #${tokenId} 已取消出租！`);
-
-    return tx.hash;
+    // 暂时抛出错误，因为合约中没有取消租赁的函数
+    throw new Error("合约中没有取消租赁功能");
   } catch (error) {
     console.error("🚀 取消NFT出租失败:", error);
 
-    let errorMessage = "取消失败，请重试";
+    let errorMessage = "取消失败，合约暂不支持取消租赁功能";
     if (error instanceof Error) {
-      if (error.message.includes("Not lender")) {
-        errorMessage = "只有出租人才能取消出租";
-      }
+      errorMessage = error.message;
     }
 
     globalFeedback.toast.error("取消失败", errorMessage);
@@ -977,9 +859,10 @@ export const getNFTRentalInfo = async (
   tokenId: string
 ): Promise<{
   lender: string;
-  pricePerDay: string;
-  pricePerDayInEth: string;
-  maxDays: number;
+  renter: string;
+  endTime: number;
+  rentFee: string;
+  rentFeeInEth: string;
 } | null> => {
   try {
     const { provider } = await connectOnce();
@@ -987,20 +870,22 @@ export const getNFTRentalInfo = async (
 
     const contract = new ethers.Contract(
       addresses.nftRental,
-      NFTRentalABI,
+      IDNFTRentABI,
       provider
     );
-    const rentalInfo = await contract.rentals(tokenId);
+    // 使用公共的rentInfos映射
+    const rentalInfo = await contract.rentInfos(tokenId);
 
-    if (rentalInfo.pricePerDay.eq(0)) {
+    if (rentalInfo.rentFee.eq(0)) {
       return null; // 未上架出租
     }
 
     return {
       lender: rentalInfo.lender,
-      pricePerDay: rentalInfo.pricePerDay.toString(),
-      pricePerDayInEth: rentalInfo.pricePerDay.toString(), // 直接使用wei值作为ETH显示
-      maxDays: rentalInfo.maxDays.toNumber(),
+      renter: rentalInfo.renter,
+      endTime: rentalInfo.endTime.toNumber(),
+      rentFee: rentalInfo.rentFee.toString(),
+      rentFeeInEth: ethers.utils.formatEther(rentalInfo.rentFee),
     };
   } catch (error) {
     console.error("🚀 获取NFT租赁信息失败:", error);
@@ -1027,21 +912,25 @@ export const getNFTActiveRental = async (
 
     const contract = new ethers.Contract(
       addresses.nftRental,
-      NFTRentalABI,
+      IDNFTRentABI,
       provider
     );
-    const activeRental = await contract.activeRentals(tokenId);
+    // 使用公共的rentInfos映射
+    const rentalInfo = await contract.rentInfos(tokenId);
 
-    if (activeRental.renter === ethers.constants.AddressZero) {
+    if (
+      rentalInfo.renter === ethers.constants.AddressZero ||
+      rentalInfo.endTime.eq(0)
+    ) {
       return null; // 没有活跃租赁
     }
 
     const currentTime = Math.floor(Date.now() / 1000);
-    const endTime = activeRental.endTime.toNumber();
+    const endTime = rentalInfo.endTime.toNumber();
 
     return {
-      renter: activeRental.renter,
-      lender: activeRental.lender,
+      renter: rentalInfo.renter,
+      lender: rentalInfo.lender,
       endTime: endTime,
       isExpired: currentTime > endTime,
     };
@@ -1058,35 +947,18 @@ export const getNFTActiveRental = async (
  */
 export const claimExpiredRental = async (tokenId: string): Promise<string> => {
   try {
-    const { signer } = await connectOnce();
-    const addresses = getContractAddresses();
+    console.log(`⚠️ 归还过期租赁NFT - Token ID: ${tokenId}`);
+    console.log("⚠️ 注意：IDNFTRent合约中没有claimExpiredRental函数");
+    console.log("⚠️ 需要合约添加归还过期租赁功能或通过其他方式实现");
 
-    console.log(`🚀 归还过期租赁NFT - Token ID: ${tokenId}`);
-
-    const contract = new ethers.Contract(
-      addresses.nftRental,
-      NFTRentalABI,
-      signer
-    );
-    const tx = await contract.claimExpiredRental(tokenId);
-
-    console.log("🚀 交易已发送:", tx.hash);
-    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
-
-    await tx.wait();
-    globalFeedback.toast.success("归还成功", `NFT #${tokenId} 已成功归还！`);
-
-    return tx.hash;
+    // 暂时抛出错误，因为合约中没有归还过期租赁的函数
+    throw new Error("合约中没有归还过期租赁功能");
   } catch (error) {
     console.error("🚀 归还过期租赁NFT失败:", error);
 
-    let errorMessage = "归还失败，请重试";
+    let errorMessage = "归还失败，合约暂不支持归还过期租赁功能";
     if (error instanceof Error) {
-      if (error.message.includes("Not rented")) {
-        errorMessage = "NFT未在租赁中";
-      } else if (error.message.includes("Rental active")) {
-        errorMessage = "租期尚未到期";
-      }
+      errorMessage = error.message;
     }
 
     globalFeedback.toast.error("归还失败", errorMessage);

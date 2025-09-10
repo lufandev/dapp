@@ -1,50 +1,30 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_nftCore",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
-        "name": "lender",
+        "name": "owner",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "pricePerDay",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "maxDays",
-        "type": "uint256"
       }
     ],
-    "name": "ListedForRent",
-    "type": "event"
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -70,17 +50,10 @@
     "inputs": [
       {
         "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "RentCancelled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
+      },
       {
         "indexed": true,
         "internalType": "uint256",
@@ -88,76 +61,65 @@
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
+        "internalType": "address",
+        "name": "nftAddr",
+        "type": "address"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
         "name": "lender",
         "type": "address"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "address",
         "name": "renter",
         "type": "address"
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "daysCount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "totalCost",
-        "type": "uint256"
-      }
-    ],
-    "name": "Rented",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "lender",
-        "type": "address"
-      }
-    ],
-    "name": "RentalClaimed",
-    "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "activeRentals",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "renter",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "lender",
-        "type": "address"
-      },
-      {
         "internalType": "uint256",
         "name": "endTime",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "rentReceiver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "payToken",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rentFee",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "rentAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "RentEvent",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "PLATFORM",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -166,12 +128,17 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "platform",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
       }
     ],
-    "name": "cancelRentOffer",
+    "name": "authorizePlatform",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -179,12 +146,12 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
       }
     ],
-    "name": "claimExpiredRental",
+    "name": "cancleAuthPlatform",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -197,32 +164,39 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "pricePerDay",
-        "type": "uint256"
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "nftAddr",
+        "type": "address"
       },
       {
         "internalType": "uint256",
-        "name": "maxDays",
+        "name": "durationDays",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "rentReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rentFee",
         "type": "uint256"
       }
     ],
     "name": "listForRent",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "nftCore",
-    "outputs": [
-      {
-        "internalType": "contract NFTCore",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -253,14 +227,14 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "daysCount",
-        "type": "uint256"
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
       }
     ],
-    "name": "rentToken",
+    "name": "rent",
     "outputs": [],
-    "stateMutability": "payable",
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -271,25 +245,63 @@
         "type": "uint256"
       }
     ],
-    "name": "rentals",
+    "name": "rentInfos",
     "outputs": [
+      {
+        "internalType": "address",
+        "name": "nftAddr",
+        "type": "address"
+      },
       {
         "internalType": "address",
         "name": "lender",
         "type": "address"
       },
       {
+        "internalType": "address",
+        "name": "renter",
+        "type": "address"
+      },
+      {
         "internalType": "uint256",
-        "name": "pricePerDay",
+        "name": "endTime",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "rentReceiver",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "payToken",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rentFee",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "maxDays",
+        "name": "rentAmount",
         "type": "uint256"
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_feePercent",
+        "type": "uint8"
+      }
+    ],
+    "name": "setFeePercent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

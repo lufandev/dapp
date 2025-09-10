@@ -91,11 +91,11 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       console.log("🚀 注册ID:", id.toLowerCase());
 
       // 调用集成的注册函数
-      if (typeof window === 'undefined') {
-        throw new Error('服务端渲染环境下无法注册NFT');
+      if (typeof window === "undefined") {
+        throw new Error("服务端渲染环境下无法注册NFT");
       }
-      
-      const { registerNFT } = await import('@/common/connection-service');
+
+      const { registerNFT } = await import("@/common/connection-service");
       const result = await registerNFT(id.toLowerCase());
 
       console.log("🚀 注册成功!");
@@ -189,10 +189,16 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       case "processing":
         return (
           <div className="text-center py-8">
-            {React.createElement(FaSpinner as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
-              className: "animate-spin mx-auto mb-4 text-3xl",
-              style: { color: "var(--primary-color)" }
-            })}
+            {React.createElement(
+              FaSpinner as React.ComponentType<{
+                className?: string;
+                style?: React.CSSProperties;
+              }>,
+              {
+                className: "animate-spin mx-auto mb-4 text-3xl",
+                style: { color: "var(--primary-color)" },
+              }
+            )}
             <p style={{ color: "var(--foreground)" }}>
               {registeredId ? "正在区块链上注册..." : "正在连接钱包..."}
             </p>
@@ -210,10 +216,16 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       case "success":
         return (
           <div className="text-center py-4">
-            {React.createElement(FaCheckCircle as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
-              className: "mx-auto mb-4 text-4xl",
-              style: { color: "#10b981" }
-            })}
+            {React.createElement(
+              FaCheckCircle as React.ComponentType<{
+                className?: string;
+                style?: React.CSSProperties;
+              }>,
+              {
+                className: "mx-auto mb-4 text-4xl",
+                style: { color: "#10b981" },
+              }
+            )}
             <h3
               className="text-lg font-semibold mb-2"
               style={{ color: "var(--foreground)" }}
@@ -251,10 +263,16 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       case "failed":
         return (
           <div className="text-center py-4">
-            {React.createElement(FaExclamationCircle as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
-              className: "mx-auto mb-4 text-4xl",
-              style: { color: "#ef4444" }
-            })}
+            {React.createElement(
+              FaExclamationCircle as React.ComponentType<{
+                className?: string;
+                style?: React.CSSProperties;
+              }>,
+              {
+                className: "mx-auto mb-4 text-4xl",
+                style: { color: "#ef4444" },
+              }
+            )}
             <h3
               className="text-lg font-semibold mb-2"
               style={{ color: "var(--foreground)" }}
@@ -273,10 +291,16 @@ const RegisterIDModal: React.FC<RegisterIDModalProps> = ({
       case "error":
         return (
           <div className="text-center py-4">
-            {React.createElement(FaExclamationCircle as React.ComponentType<{ className?: string; style?: React.CSSProperties }>, {
-              className: "mx-auto mb-4 text-4xl",
-              style: { color: "#ef4444" }
-            })}
+            {React.createElement(
+              FaExclamationCircle as React.ComponentType<{
+                className?: string;
+                style?: React.CSSProperties;
+              }>,
+              {
+                className: "mx-auto mb-4 text-4xl",
+                style: { color: "#ef4444" },
+              }
+            )}
             <h3
               className="text-lg font-semibold mb-2"
               style={{ color: "var(--foreground)" }}

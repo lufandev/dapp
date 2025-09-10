@@ -1,80 +1,30 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_nftCore",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_nftRental",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
-        "name": "seller",
+        "name": "owner",
         "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "buyer",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
       }
     ],
-    "name": "Bought",
-    "type": "event"
+    "name": "OwnableInvalidOwner",
+    "type": "error"
   },
   {
-    "anonymous": false,
     "inputs": [
       {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": true,
         "internalType": "address",
-        "name": "seller",
+        "name": "account",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
       }
     ],
-    "name": "ListedForSale",
-    "type": "event"
+    "name": "OwnableUnauthorizedAccount",
+    "type": "error"
   },
   {
     "anonymous": false,
@@ -100,38 +50,73 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "indexed": true,
         "internalType": "uint256",
         "name": "tokenId",
         "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "payToken",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "seller",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "buyer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "nftAddr",
+        "type": "address"
       }
     ],
-    "name": "SaleCancelled",
+    "name": "SaleEvent",
     "type": "event"
   },
   {
-    "inputs": [
+    "inputs": [],
+    "name": "PLATFORM",
+    "outputs": [
       {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
-    "name": "buy",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "cancelSale",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -143,39 +128,69 @@
       },
       {
         "internalType": "uint256",
-        "name": "price",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "listForSale",
+    "name": "buy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "nftCore",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract NFTCore",
-        "name": "",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "cancleSale",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "nftRental",
-    "outputs": [
+    "inputs": [
       {
-        "internalType": "contract NFTRental",
-        "name": "",
+        "internalType": "string",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "price",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "payToken",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "receiver",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "nftAddr",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
+    "name": "listForSale",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -201,25 +216,14 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
+        "internalType": "uint8",
+        "name": "_feePercent",
+        "type": "uint8"
       }
     ],
-    "name": "sales",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "seller",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "price",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "setFeePercent",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
