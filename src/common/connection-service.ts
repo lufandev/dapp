@@ -478,9 +478,14 @@ export const listNFTForSale = async (
       `🚀 上架NFT出售 - Token ID: ${tokenId}, 价格: ${priceInEth} ETH`
     );
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftSale,
-      IDNFTSaleABI,
+      filteredSaleABI,
       signer
     );
     const priceInWei = ethers.utils.parseEther(priceInEth);
@@ -540,9 +545,14 @@ export const buyNFTFromSale = async (
 
     console.log(`🚀 购买NFT - Token ID: ${tokenId}, 数量: ${amount}`);
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftSale,
-      IDNFTSaleABI,
+      filteredSaleABI,
       signer
     );
 
@@ -589,9 +599,14 @@ export const cancelNFTSale = async (tokenId: string): Promise<string> => {
 
     console.log(`🚀 取消NFT出售 - Token ID: ${tokenId}`);
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredSaleABI = IDNFTSaleABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftSale,
-      IDNFTSaleABI,
+      filteredSaleABI,
       signer
     );
     const tx = await contract.cancleSale(tokenId);
@@ -671,9 +686,14 @@ export const listNFTForRent = async (
       `🚀 上架NFT出租 - Token ID: ${tokenId}, 每日租金: ${pricePerDayInEth} ETH, 最大天数: ${maxDays}`
     );
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftRental,
-      IDNFTRentABI,
+      filteredRentABI,
       signer
     );
     const rentFeeInWei = ethers.utils.parseEther(pricePerDayInEth);
@@ -740,9 +760,14 @@ export const rentNFT = async (
 
     console.log(`🚀 租赁NFT - Token ID: ${tokenId}, 天数: ${daysCount}`);
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftRental,
-      IDNFTRentABI,
+      filteredRentABI,
       signer
     );
 
@@ -837,9 +862,14 @@ export const getNFTRentalInfo = async (
     const { provider } = await connectOnce();
     const addresses = getContractAddresses();
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftRental,
-      IDNFTRentABI,
+      filteredRentABI,
       provider
     );
     // 使用公共的rentInfos映射
@@ -879,9 +909,14 @@ export const getNFTActiveRental = async (
     const { provider } = await connectOnce();
     const addresses = getContractAddresses();
 
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredRentABI = IDNFTRentABI.filter((item: { type: string }) => 
+      item.type === 'function' || item.type === 'event'
+    );
+    
     const contract = new ethers.Contract(
       addresses.nftRental,
-      IDNFTRentABI,
+      filteredRentABI,
       provider
     );
     // 使用公共的rentInfos映射
