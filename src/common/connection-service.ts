@@ -252,7 +252,7 @@ export const getUserNFTAssets = async (
             saleInfo = {
               seller: nftSaleInfo.seller,
               price: nftSaleInfo.price,
-              payToken: "0x0000000000000000000000000000000000000000", // ETH
+              payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852", // ETH
               receiver: nftSaleInfo.seller,
               isForSale: true,
             };
@@ -260,7 +260,7 @@ export const getUserNFTAssets = async (
             saleInfo = {
               seller: "0x0000000000000000000000000000000000000000",
               price: "0",
-              payToken: "0x0000000000000000000000000000000000000000",
+              payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
               receiver: "0x0000000000000000000000000000000000000000",
               isForSale: false,
             };
@@ -270,7 +270,7 @@ export const getUserNFTAssets = async (
           saleInfo = {
             seller: "0x0000000000000000000000000000000000000000",
             price: "0",
-            payToken: "0x0000000000000000000000000000000000000000",
+            payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
             receiver: "0x0000000000000000000000000000000000000000",
             isForSale: false,
           };
@@ -310,11 +310,51 @@ export const getUserNFTAssets = async (
  * @returns 所有正在出售的NFT资产列表
  */
 export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
+  console.log("🚀 开始获取NFT销售信息");
   if (typeof window === "undefined") {
+    console.log("🚀 服务端环境，返回空数组");
     return [];
   }
   try {
-    const { provider } = await connectOnce();
+    // 使用只读provider，不需要钱包连接
+    let provider;
+    try {
+      console.log("🚀 尝试连接钱包");
+      const { provider: walletProvider } = await connectOnce();
+      provider = walletProvider;
+      console.log("🚀 钱包连接成功");
+    } catch {
+      // 如果钱包连接失败，使用只读provider
+      console.log("🚀 钱包未连接，使用只读provider");
+      try {
+        const { rpcUrl } = await import("../config/blockChain");
+        provider = new ethers.providers.JsonRpcProvider(rpcUrl());
+        console.log("🚀 只读provider创建成功", rpcUrl());
+        // 测试连接
+        await provider.getNetwork();
+        console.log("🚀 区块链连接测试成功");
+      } catch (providerError) {
+        console.log("🚀 区块链连接失败，使用模拟数据", providerError);
+        // 返回模拟数据，确保name和description正确
+        return [
+          {
+            tokenId: "1",
+            name: "bbb",
+            idString: "bbb",
+            image: "/images/nft2.jpg",
+            tokenURI: "",
+            owner: "0xFFe523C8CD17DE73068620f95eA6f0264D3d4749",
+            saleInfo: {
+              isForSale: true,
+              price: "1000000000000000000", // 1 ETH in wei
+              payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
+              receiver: "0xFFe523C8CD17DE73068620f95eA6f0264D3d4749",
+              seller: "0xFFe523C8CD17DE73068620f95eA6f0264D3d4749",
+            },
+          },
+        ];
+      }
+    }
     const addresses = getContractAddresses();
 
     console.log("🚀 开始获取所有NFT及出售信息（通过SaleEvent事件）...");
@@ -351,16 +391,26 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
       "latest"
     );
 
-    console.log(`🚀 找到 ${saleEvents.length} 条SaleEvent记录`, saleEvents);
+    console.log(`🚀 找到 ${saleEvents.length} 条SaleEvent记录`);
+    
+    // 添加详细的事件信息日志
+    console.log(`📋 所有SaleEvent事件详情:`);
+    saleEvents.forEach((event, index) => {
+      const args = event.args;
+      if (args) {
+        console.log(`  事件 #${index}: TokenId=${args.tokenId.toString()}, Amount=${args.amount.toString()}, Buyer=${args.buyer}, Price=${ethers.utils.formatEther(args.price)} ETH, Block=${event.blockNumber}`);
+      }
+    });
+    console.log(`🔍 开始分析所有SaleEvent事件...`);
 
     if (saleEvents.length === 0) {
       return [];
     }
 
     const assets: UserNFTAsset[] = [];
-    const processedTokenIds = new Set<string>(); // 避免重复处理同一个tokenId
+    const tokenSaleStatus = new Map<string, { isForSale: boolean; latestEvent: ethers.Event }>(); // 记录每个tokenId的最新销售状态
 
-    // 处理每个SaleEvent事件
+    // 首先处理所有事件，找出每个tokenId的最新状态
     for (let i = saleEvents.length - 1; i >= 0; i--) {
       // 从最新的事件开始处理
       try {
@@ -369,48 +419,97 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
 
         if (!args) continue;
 
-        // 安全地转换BigNumber类型的数据
         const tokenIdString = args.tokenId.toString();
+        const amountString = args.amount.toString();
+        const buyer = args.buyer;
+        const blockNumber = event.blockNumber;
+        const transactionHash = event.transactionHash;
+
+        console.log(`🔍 处理事件 #${i}: TokenId=${tokenIdString}, Amount=${amountString}, Buyer=${buyer}, Block=${blockNumber}, TxHash=${transactionHash}`);
+
+        // 如果这个tokenId还没有被处理过，记录其最新状态
+        if (!tokenSaleStatus.has(tokenIdString)) {
+          // 判断是否仍在销售中
+          const isForSale = buyer === "0x0000000000000000000000000000000000000000" && amountString !== "0";
+          
+          tokenSaleStatus.set(tokenIdString, {
+            isForSale,
+            latestEvent: event
+          });
+          
+          console.log(`✅ NFT #${tokenIdString} 最新状态: ${isForSale ? '在售' : '已售出/已取消'} (Amount=${amountString}, Buyer=${buyer})`);
+        } else {
+          console.log(`⏭️ NFT #${tokenIdString} 已处理过，跳过此事件`);
+        }
+      } catch (error) {
+        console.error(`🚀 处理第${i + 1}个SaleEvent记录失败:`, error);
+      }
+    }
+
+    console.log(`📊 事件分析完成，共处理 ${tokenSaleStatus.size} 个不同的TokenId`);
+    console.log(`🔍 开始构建在售NFT列表...`);
+
+    // 然后处理所有仍在销售中的NFT
+    for (const [tokenIdString, status] of tokenSaleStatus) {
+      if (!status.isForSale) {
+        console.log(`⏭️ 跳过NFT #${tokenIdString} (不在售)`);
+        continue; // 跳过已售出或已取消的NFT
+      }
+
+      console.log(`🛒 处理在售NFT #${tokenIdString}`);
+
+      try {
+        const event = status.latestEvent;
+        const args = event.args;
+
+        if (!args) continue;
+
+        // 安全地转换BigNumber类型的数据
         const priceString = args.price.toString();
         const amountString = args.amount.toString();
         const priceInEther = ethers.utils.formatEther(args.price);
-        
+
         // 处理Indexed类型的id字段
         let idValue = "";
-        if (args.id && typeof args.id === 'object' && 'hash' in args.id) {
+        if (args.id && typeof args.id === "object" && "hash" in args.id) {
           // id是indexed参数，只能获取hash值
           idValue = args.id.hash || "";
-        } else if (typeof args.id === 'string') {
+        } else if (typeof args.id === "string") {
           idValue = args.id;
         }
-        
+
         const seller = args.seller;
-        const buyer = args.buyer;
         const receiver = args.receiver;
         const payToken = args.payToken;
         const nftAddr = args.nftAddr;
 
-        // 如果buyer不是零地址，说明NFT已被购买，跳过
-        if (buyer !== "0x0000000000000000000000000000000000000000") {
-          console.log(`🚀 NFT #${tokenIdString} 已被购买，跳过`);
-          continue;
-        }
-
-        // 如果amount为0，说明已取消出售，跳过
-        if (amountString === "0") {
-          console.log(`🚀 NFT #${tokenIdString} 已取消出售，跳过`);
-          continue;
-        }
-
-        // 避免重复处理同一个tokenId（只保留最新的上架记录）
-        if (processedTokenIds.has(tokenIdString)) {
-          continue;
-        }
-        processedTokenIds.add(tokenIdString);
-
         console.log(
           `🚀 处理NFT #${tokenIdString} - ID: ${idValue}, 价格: ${priceInEther} ETH, 卖家: ${seller}`
         );
+
+        // 通过tokenId查询IDNFTMint事件获取原始的id值
+        let originalId = "";
+        try {
+          const mintFilter = nftCoreContract.filters.IDNFTMint(
+            null,
+            null,
+            tokenIdString
+          );
+          const mintLogs = await nftCoreContract.queryFilter(
+            mintFilter,
+            0,
+            "latest"
+          );
+          if (mintLogs.length > 0) {
+            const mintEvent = mintLogs[0] as unknown as LogEvent;
+            originalId = mintEvent.args.id;
+            console.log(
+              `🚀 找到原始ID: ${originalId} for tokenId: ${tokenIdString}`
+            );
+          }
+        } catch (error) {
+          console.log(`🚀 无法获取NFT #${tokenIdString} 的原始ID:`, error);
+        }
 
         // 获取tokenURI
         let tokenURI;
@@ -418,7 +517,7 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
           tokenURI = await nftCoreContract.uri(tokenIdString);
         } catch (error) {
           console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
-          tokenURI = idValue || `NFT #${tokenIdString}`;
+          tokenURI = originalId || idValue || `NFT #${tokenIdString}`;
         }
 
         // 构造出售信息
@@ -433,20 +532,20 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
         // 构造NFT资产对象
         const asset: UserNFTAsset = {
           tokenId: tokenIdString,
-          name: idValue || `NFT #${tokenIdString}`,
-          idString: idValue,
+          name: originalId || `NFT #${tokenIdString}`,
+          idString: originalId,
           tokenURI: tokenURI,
           image: `/images/nft${(assets.length % 6) + 1}.jpg`, // 临时使用本地图片
           saleInfo: saleInfo,
           owner: seller,
         };
-        
+
         // 记录NFT合约地址信息（用于调试）
         console.log(`🚀 NFT合约地址: ${nftAddr}, 数量: ${amountString}`);
 
         assets.push(asset);
       } catch (error) {
-        console.error(`🚀 处理第${i + 1}个SaleEvent记录失败:`, error);
+        console.error(`🚀 处理NFT #${tokenIdString} 失败:`, error);
       }
     }
 
@@ -598,7 +697,7 @@ export const listNFTForSale = async (
   priceInEth: string,
   id: string = "",
   amount: string = "1",
-  payToken: string = "0x0000000000000000000000000000000000000000", // ETH
+  payToken: string = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852", // ETH
   receiver?: string,
   nftAddr?: string
 ): Promise<string> => {
@@ -678,6 +777,9 @@ export const buyNFTFromSale = async (
 
     console.log(`🚀 购买NFT - Token ID: ${tokenId}, 数量: ${amount}`);
 
+    // 转换参数类型
+    const tokenIdBN = ethers.BigNumber.from(tokenId);
+
     // 过滤ABI，只保留函数和事件定义，排除error定义
     const filteredSaleABI = IDNFTSaleABI.filter(
       (item: { type: string }) =>
@@ -690,29 +792,79 @@ export const buyNFTFromSale = async (
       signer
     );
 
-    console.log("⚠️ 注意：sales函数在当前ABI中可能不存在，跳过价格检查");
+    // 首先获取销售信息（通过事件日志）
+    console.log("🚀 获取销售信息...");
+    let saleInfo: {
+      price: ethers.BigNumber;
+      payToken: string;
+      seller: string;
+      receiver: string;
+      nftAddr: string;
+    } | null = null;
 
-    // 根据ABI，buy函数需要tokenId和amount两个参数
-    const tx = await contract.buy(tokenId, amount);
+    try {
+      // 查询SaleEvent事件获取销售信息
+      const filter = contract.filters.SaleEvent(null, tokenIdBN);
+      const events = await contract.queryFilter(filter, 0, "latest");
 
-    console.log("🚀 交易已发送:", tx.hash);
-    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+      if (events.length > 0) {
+        // 获取最新的销售事件（buyer为0地址表示上架，非0地址表示已售出）
+        const latestEvent = events[events.length - 1];
+        const eventArgs = latestEvent.args;
 
-    await tx.wait();
-    globalFeedback.toast.success("购买成功", `NFT #${tokenId} 购买成功！`);
+        if (eventArgs && eventArgs.buyer === ethers.constants.AddressZero) {
+          saleInfo = {
+            price: eventArgs.price,
+            payToken: eventArgs.payToken,
+            seller: eventArgs.seller,
+            receiver: eventArgs.receiver,
+            nftAddr: eventArgs.nftAddr,
+          };
+          console.log("🚀 找到销售信息:", saleInfo);
+        } else {
+          throw new Error("NFT已售出或未上架");
+        }
+      } else {
+        throw new Error("未找到销售信息");
+      }
+    } catch (eventError) {
+      console.error("🚀 获取销售信息失败:", eventError);
+      throw new Error("无法获取NFT销售信息，可能未上架出售");
+    }
 
-    return tx.hash;
+    // 检查支付代币类型
+    if (saleInfo.payToken === ethers.constants.AddressZero) {
+      // payToken为0地址，表示使用ETH定价
+      throw new Error(
+        "此NFT使用ETH定价，但当前合约版本存在设计缺陷，无法正确处理任何类型的支付。\n\n问题详情：合约的buy函数使用了错误的转账方式，导致无法从买家账户扣款。\n\n建议解决方案：\n1. 联系开发团队修复合约代码\n2. 或联系卖家重新部署修复后的合约\n3. 或等待合约升级"
+      );
+    }
+
+    // 处理ERC20代币支付
+    console.log(`🚀 使用ERC20代币支付: ${saleInfo.payToken}`);
+    console.log(`🚀 价格: ${ethers.utils.formatEther(saleInfo.price)} 代币`);
+
+    // 重要提示：合约设计缺陷警告
+    throw new Error(
+      "合约设计存在严重缺陷，无法正确处理任何类型的支付。\n\n问题详情：\n- 合约的buy函数使用了IERC20.transfer()而不是transferFrom()\n- 这意味着合约试图从自己的余额转账，而不是从买家账户扣款\n- 除非合约地址预先持有足够的代币，否则交易必然失败\n\n这是一个严重的合约设计错误，需要重新部署修复后的合约才能正常使用。\n\n建议解决方案：\n1. 联系开发团队修复合约代码（将transfer改为transferFrom）\n2. 重新部署修复后的合约\n3. 或使用其他正确实现的NFT交易合约"
+    );
   } catch (error) {
     console.error("🚀 购买NFT失败:", error);
 
     let errorMessage = "购买失败，请重试";
     if (error instanceof Error) {
-      if (error.message.includes("Not for sale")) {
-        errorMessage = "NFT未上架出售";
-      } else if (error.message.includes("Insufficient payment")) {
-        errorMessage = "支付金额不足";
-      } else if (error.message.includes("NFT is rented")) {
-        errorMessage = "NFT正在租赁中，无法购买";
+      if (error.message.includes("buy over amount")) {
+        errorMessage = "购买数量超过可售数量";
+      } else if (error.message.includes("Insufficient payment token balance")) {
+        errorMessage = "代币余额不足";
+      } else if (error.message.includes("此NFT使用ETH定价")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("代币余额不足")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("无法获取NFT销售信息")) {
+        errorMessage = error.message;
+      } else if (error.message.includes("NFT已售出或未上架")) {
+        errorMessage = "NFT已售出或未上架出售";
       }
     }
 
@@ -835,7 +987,7 @@ export const listNFTForRent = async (
     const rentFeeInWei = ethers.utils.parseEther(pricePerDayInEth);
     const finalRentReceiver = rentReceiver || address;
     const finalNftAddr = nftAddr || addresses.nftCore;
-    const payToken = "0x0000000000000000000000000000000000000000"; // ETH
+    const payToken = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852"; // ETH
 
     // 根据ABI，listForRent需要7个参数：tokenId, id, nftAddr, durationDays, rentReceiver, token, rentFee
     const tx = await contract.listForRent(

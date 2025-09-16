@@ -14,7 +14,6 @@ import { ValueID } from "@/types";
 // import { ethers } from "ethers";
 // import { useFeedback } from "@/components/ui/Feedback";
 import { UserNFTAsset } from "@/common/connection-service";
-import { ethers } from "ethers";
 export default function Home() {
   const { t } = useLocale();
   // const { isAuthenticated } = useAuth();
@@ -45,35 +44,35 @@ export default function Home() {
 
   // 将UserNFTAsset转换为ValueID格式
   const convertNFTAssetToValueID = useCallback(
-    (asset: UserNFTAsset): ValueID => {
+    async (asset: UserNFTAsset): Promise<ValueID> => {
       const saleInfo = asset.saleInfo;
 
       // 安全地转换价格，处理BigNumber对象，将WEI转换为ETH
-      let priceValue = 0;
-      if (saleInfo?.isForSale && saleInfo.price) {
-        try {
-          // 如果price是BigNumber对象，使用ethers.utils.formatEther转换
-          if (
-            typeof saleInfo.price === "object" &&
-            saleInfo.price !== null &&
-            "toString" in saleInfo.price
-          ) {
-            // 检查是否是BigNumber类型
-            priceValue = parseFloat(
-              ethers.utils.formatEther(saleInfo.price as ethers.BigNumberish)
-            );
-          } else if (typeof saleInfo.price === "string") {
-            // 如果已经是字符串（WEI单位），转换为ETH
-            priceValue = parseFloat(ethers.utils.formatEther(saleInfo.price));
-          } else if (typeof saleInfo.price === "number") {
-            // 如果已经是数字（假设是WEI单位），转换为ETH
-            priceValue = parseFloat(ethers.utils.formatEther(String(saleInfo.price)));
+        let priceValue = 0;
+        if (saleInfo?.isForSale && saleInfo.price) {
+          try {
+            // 动态导入ethers以避免SSR问题
+            const { formatEther } = await import("ethers/lib/utils");
+            
+            // 统一转换为字符串，然后使用formatEther
+            let priceString = "";
+            if (typeof saleInfo.price === "string") {
+              priceString = saleInfo.price;
+            } else if (typeof saleInfo.price === "number") {
+              priceString = String(saleInfo.price);
+            } else if (saleInfo.price && typeof saleInfo.price === "object") {
+              // 对于对象类型（如BigNumber），使用String()转换
+              priceString = String(saleInfo.price);
+            }
+            
+            if (priceString) {
+              priceValue = parseFloat(formatEther(priceString));
+            }
+          } catch (error) {
+            console.error("价格转换失败:", error, saleInfo.price);
+            priceValue = 0;
           }
-        } catch (error) {
-          console.error("价格转换失败:", error, saleInfo.price);
-          priceValue = 0;
         }
-      }
 
       // 安全地转换tokenId为字符串
       const tokenIdValue = String(asset.tokenId);
@@ -129,7 +128,7 @@ export default function Home() {
         console.log("🚀 ~ loadData ~ nftsWithSaleInfo:", nftsWithSaleInfo);
 
         // 转换为ValueID格式
-        const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
+        const valueIDs = await Promise.all(nftsWithSaleInfo.map(convertNFTAssetToValueID));
 
         console.log("🚀 转换后的ValueID数据:", valueIDs);
         setAllValueIDs(valueIDs);
@@ -159,8 +158,8 @@ export default function Home() {
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按收藏数排序（这里暂时随机排序，可以后续改进）
-        const valueIDs = nftsWithSaleInfo
-          .map(convertNFTAssetToValueID)
+        const convertedValueIDs = await Promise.all(nftsWithSaleInfo.map(convertNFTAssetToValueID));
+        const valueIDs = convertedValueIDs
           .sort(() => Math.random() - 0.5) // 暂时随机排序作为推荐
           .slice(0, 20); // 限制20个
 
@@ -191,8 +190,8 @@ export default function Home() {
         const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
         // 转换为ValueID格式并按tokenId倒序排序（新的NFT通常有更大的tokenId）
-        const valueIDs = nftsWithSaleInfo
-          .map(convertNFTAssetToValueID)
+        const convertedValueIDs = await Promise.all(nftsWithSaleInfo.map(convertNFTAssetToValueID));
+        const valueIDs = convertedValueIDs
           .sort(
             (a: ValueID, b: ValueID) =>
               parseInt(b.tokenId) - parseInt(a.tokenId)
@@ -256,7 +255,7 @@ export default function Home() {
       const nftsWithSaleInfo = await getAllNFTsWithSaleInfo();
 
       // 转换为ValueID格式
-      const valueIDs = nftsWithSaleInfo.map(convertNFTAssetToValueID);
+      const valueIDs = await Promise.all(nftsWithSaleInfo.map(convertNFTAssetToValueID));
       console.log("🚀 ~ refresh ~ valueIDs:", valueIDs);
 
       setAllValueIDs(valueIDs);
