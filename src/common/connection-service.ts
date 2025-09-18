@@ -140,8 +140,6 @@ export const getContractAddresses = () => {
     nftCore: config.nftCoreAddress,
     nftSale: config.nftSaleAddress,
     nftRental: config.nftRentalAddress,
-    // 向后兼容
-    nft: config.nftAddress,
   };
 };
 
@@ -159,7 +157,6 @@ export interface UserNFTAsset {
   tokenId: string;
   name: string;
   idString: string;
-  tokenURI: string;
   image?: string;
   saleInfo?: NFTSaleInfo;
   owner: string;
@@ -281,7 +278,6 @@ export const getUserNFTAssets = async (
           tokenId: tokenIdString,
           name: finalID || `NFT #${tokenIdString}`,
           idString: finalID,
-          tokenURI: tokenURI,
           image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
           saleInfo: saleInfo,
           owner: targetAddress,
@@ -342,7 +338,6 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
             name: "bbb",
             idString: "bbb",
             image: "/images/nft2.jpg",
-            tokenURI: "",
             owner: "0xFFe523C8CD17DE73068620f95eA6f0264D3d4749",
             saleInfo: {
               isForSale: true,
@@ -366,20 +361,11 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
       (item: { type: string }) =>
         item.type === "function" || item.type === "event"
     );
-    const filteredCoreABI = IDNFTABI.filter(
-      (item: { type: string }) =>
-        item.type === "function" || item.type === "event"
-    );
 
     // 创建合约实例
     const nftSaleContract = new ethers.Contract(
       addresses.nftSale,
       filteredSaleABI,
-      provider
-    );
-    const nftCoreContract = new ethers.Contract(
-      addresses.nftCore,
-      filteredCoreABI,
       provider
     );
 
@@ -391,14 +377,20 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
       "latest"
     );
 
-    console.log(`🚀 找到 ${saleEvents.length} 条SaleEvent记录`);
-    
+    console.log(`🚀 找到 ${saleEvents.length} 条SaleEvent记录`, saleEvents);
+
     // 添加详细的事件信息日志
     console.log(`📋 所有SaleEvent事件详情:`);
     saleEvents.forEach((event, index) => {
       const args = event.args;
       if (args) {
-        console.log(`  事件 #${index}: TokenId=${args.tokenId.toString()}, Amount=${args.amount.toString()}, Buyer=${args.buyer}, Price=${ethers.utils.formatEther(args.price)} ETH, Block=${event.blockNumber}`);
+        console.log(
+          `  事件 #${index}: TokenId=${args.tokenId.toString()}, Amount=${args.amount.toString()}, Buyer=${
+            args.buyer
+          }, Price=${ethers.utils.formatEther(args.price)} ETH, Block=${
+            event.blockNumber
+          }`
+        );
       }
     });
     console.log(`🔍 开始分析所有SaleEvent事件...`);
@@ -408,7 +400,10 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
     }
 
     const assets: UserNFTAsset[] = [];
-    const tokenSaleStatus = new Map<string, { isForSale: boolean; latestEvent: ethers.Event }>(); // 记录每个tokenId的最新销售状态
+    const tokenSaleStatus = new Map<
+      string,
+      { isForSale: boolean; latestEvent: ethers.Event }
+    >(); // 记录每个tokenId的最新销售状态
 
     // 首先处理所有事件，找出每个tokenId的最新状态
     for (let i = saleEvents.length - 1; i >= 0; i--) {
@@ -421,23 +416,32 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
 
         const tokenIdString = args.tokenId.toString();
         const amountString = args.amount.toString();
+        const id = args.id.toString();
         const buyer = args.buyer;
         const blockNumber = event.blockNumber;
         const transactionHash = event.transactionHash;
 
-        console.log(`🔍 处理事件 #${i}: TokenId=${tokenIdString}, Amount=${amountString}, Buyer=${buyer}, Block=${blockNumber}, TxHash=${transactionHash}`);
+        console.log(
+          `🔍 处理事件 #${i}: TokenId=${tokenIdString}, Amount=${amountString}, Buyer=${buyer}, Block=${blockNumber}, TxHash=${transactionHash}, id=${id}`
+        );
 
         // 如果这个tokenId还没有被处理过，记录其最新状态
         if (!tokenSaleStatus.has(tokenIdString)) {
           // 判断是否仍在销售中
-          const isForSale = buyer === "0x0000000000000000000000000000000000000000" && amountString !== "0";
-          
+          const isForSale =
+            buyer === "0x0000000000000000000000000000000000000000" &&
+            amountString !== "0";
+
           tokenSaleStatus.set(tokenIdString, {
             isForSale,
-            latestEvent: event
+            latestEvent: event,
           });
-          
-          console.log(`✅ NFT #${tokenIdString} 最新状态: ${isForSale ? '在售' : '已售出/已取消'} (Amount=${amountString}, Buyer=${buyer})`);
+
+          console.log(
+            `✅ NFT #${tokenIdString} 最新状态: ${
+              isForSale ? "在售" : "已售出/已取消"
+            } (Amount=${amountString}, Buyer=${buyer})`
+          );
         } else {
           console.log(`⏭️ NFT #${tokenIdString} 已处理过，跳过此事件`);
         }
@@ -446,7 +450,9 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
       }
     }
 
-    console.log(`📊 事件分析完成，共处理 ${tokenSaleStatus.size} 个不同的TokenId`);
+    console.log(
+      `📊 事件分析完成，共处理 ${tokenSaleStatus.size} 个不同的TokenId`
+    );
     console.log(`🔍 开始构建在售NFT列表...`);
 
     // 然后处理所有仍在销售中的NFT
@@ -487,39 +493,6 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
           `🚀 处理NFT #${tokenIdString} - ID: ${idValue}, 价格: ${priceInEther} ETH, 卖家: ${seller}`
         );
 
-        // 通过tokenId查询IDNFTMint事件获取原始的id值
-        let originalId = "";
-        try {
-          const mintFilter = nftCoreContract.filters.IDNFTMint(
-            null,
-            null,
-            tokenIdString
-          );
-          const mintLogs = await nftCoreContract.queryFilter(
-            mintFilter,
-            0,
-            "latest"
-          );
-          if (mintLogs.length > 0) {
-            const mintEvent = mintLogs[0] as unknown as LogEvent;
-            originalId = mintEvent.args.id;
-            console.log(
-              `🚀 找到原始ID: ${originalId} for tokenId: ${tokenIdString}`
-            );
-          }
-        } catch (error) {
-          console.log(`🚀 无法获取NFT #${tokenIdString} 的原始ID:`, error);
-        }
-
-        // 获取tokenURI
-        let tokenURI;
-        try {
-          tokenURI = await nftCoreContract.uri(tokenIdString);
-        } catch (error) {
-          console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
-          tokenURI = originalId || idValue || `NFT #${tokenIdString}`;
-        }
-
         // 构造出售信息
         const saleInfo: NFTSaleInfo = {
           seller: seller,
@@ -532,9 +505,8 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
         // 构造NFT资产对象
         const asset: UserNFTAsset = {
           tokenId: tokenIdString,
-          name: originalId || `NFT #${tokenIdString}`,
-          idString: originalId,
-          tokenURI: tokenURI,
+          name: `NFT #${tokenIdString}`,
+          idString: idValue,
           image: `/images/nft${(assets.length % 6) + 1}.jpg`, // 临时使用本地图片
           saleInfo: saleInfo,
           owner: seller,
@@ -696,11 +668,9 @@ export const listNFTForSale = async (
   tokenId: string,
   priceInEth: string,
   id: string = "",
-  amount: string = "1",
-  payToken: string = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852", // ETH
-  receiver?: string,
-  nftAddr?: string
+  amount: string = "1"
 ): Promise<string> => {
+  const payToken = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852";
   try {
     const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
@@ -721,8 +691,8 @@ export const listNFTForSale = async (
       signer
     );
     const priceInWei = ethers.utils.parseEther(priceInEth);
-    const finalReceiver = receiver || address;
-    const finalNftAddr = nftAddr || addresses.nftCore;
+    const finalReceiver = address;
+    const finalNftAddr = addresses.nftCore;
 
     // 根据ABI，listForSale需要7个参数：id, tokenId, price, amount, payToken, receiver, nftAddr
     const tx = await contract.listForSale(

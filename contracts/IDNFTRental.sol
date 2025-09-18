@@ -27,8 +27,8 @@ contract IDNFTRent is Ownable {
         0x3ac6D12628746E3E7c8a98f4188B7cf6e809F699;
 
     event RentEvent(
-        string indexed id,
-        uint256 indexed tokenId,
+        string id,
+        uint256 tokenId,
         address nftAddr,
         address lender, // 出租人地址
         address renter, // 承租人地址

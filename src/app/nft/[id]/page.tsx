@@ -170,21 +170,27 @@ export default function NFTDetailPage() {
         const priceInWei = ethers.utils.parseEther(sellPrice);
 
         console.log("🚀 调用NFTSale合约挂售");
-        console.log("🚀 参数:", {
-          tokenId: valueId.tokenId,
-          priceInEth: sellPrice,
-          priceInWei: priceInWei.toString(),
-        });
+        console.log(
+          "🚀 参数:",
+          {
+            tokenId: valueId.tokenId,
+            id: valueId.name,
+            priceInEth: sellPrice,
+            priceInWei: priceInWei.toString(),
+          },
+          valueId
+        );
 
         // 调用NFTSale合约的listForSale方法
         if (typeof window === "undefined") {
           throw new Error("客户端环境不可用");
         }
-
         const { listNFTForSale } = await import("@/common/connection-service");
         const txHash = await listNFTForSale(
           valueId.tokenId,
-          sellPrice // 直接传入ETH价格字符串
+          sellPrice,
+          valueId.name,
+          "1" // amount - 默认为1
         );
 
         console.log("🚀 挂售交易哈希:", txHash);

@@ -25,8 +25,8 @@ contract IDNFTSale is Ownable {
     uint8 private feePercent; //平台抽成
 
     event SaleEvent(
-        string indexed id,
-        uint indexed tokenId,
+        string id,
+        uint tokenId,
         uint price,
         uint amount,
         address payToken,

@@ -78,8 +78,8 @@ export default function Home() {
       const tokenIdValue = String(asset.tokenId);
 
       return {
-        id: tokenIdValue,
-        name: asset.name,
+        id: asset.idString,
+        name: asset.idString,
         description: `NFT with ID: ${asset.idString}`,
         image: asset.image || "/images/nft1.jpg",
         tokenId: tokenIdValue,
