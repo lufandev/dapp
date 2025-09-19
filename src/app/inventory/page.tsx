@@ -34,7 +34,7 @@ export default function InventoryPage() {
       const saleInfo = asset.saleInfo;
 
       return {
-        id: asset.tokenId,
+        id: asset.name,
         name: asset.name,
         description: `NFT with ID: ${asset.idString}`,
         image: asset.image || "/images/nft1.jpg",
@@ -66,25 +66,27 @@ export default function InventoryPage() {
   useEffect(() => {
     const loadData = async () => {
       // 确保在客户端环境下才执行
-      if (typeof window === 'undefined') {
+      if (typeof window === "undefined") {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
         console.log("🚀 开始加载用户NFT资产...");
 
         // 获取用户持有的NFT
-        if (typeof window === 'undefined') {
+        if (typeof window === "undefined") {
           setOwnedValueIDs([]);
           setRentedValueIDs([]);
           setFavoriteValueIDs([]);
           setLoading(false);
           return;
         }
-        
-        const { getCurrentUserNFTAssets } = await import('@/common/connection-service');
+
+        const { getCurrentUserNFTAssets } = await import(
+          "@/common/connection-service"
+        );
         const userAssets = await getCurrentUserNFTAssets();
         console.log("🚀 获取到的NFT资产:", userAssets);
 

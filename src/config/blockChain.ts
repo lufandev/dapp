@@ -53,11 +53,11 @@ const confs: NetworkConfiguration[] = [
     params: [
       {
         chainId: "0xaa36a7",
-        rpcUrls: ["http://127.0.0.1:8545/"],
+        rpcUrls: ["https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"],
         chainName: "Sepolia",
         nativeCurrency: {
-          name: "NFT",
-          symbol: "NFT",
+          name: "ETH",
+          symbol: "ETH",
           decimals: 18,
         },
         blockExplorerUrls: ["https://sepolia.etherscan.io/"],
