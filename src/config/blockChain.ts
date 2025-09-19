@@ -46,9 +46,9 @@ const confs: NetworkConfiguration[] = [
     chainId: 0xaa36a7,
     nftAddress: "0xf27b70557f83956823c3174bf7955660b7c13a4d",
     // TODO: 用你在Remix部署的实际地址替换这些
-    nftCoreAddress: "0x5B52875936b050a3B93439475F41870d22D61a4b",
-    nftSaleAddress: "0x7CD3cEba1d2f5b3cf1C0989d60D3381fDB14A358",
-    nftRentalAddress: "0x76937165ed3C98F28ad0D9Ec7C226D39FF9f7f7D",
+    nftCoreAddress: "0xd6902B0A99b7f101A1D4F0AF343061D1C6ffb7eA",
+    nftSaleAddress: "0x12eFCAb5dD61d7c951748dDc661963723fC49157",
+    nftRentalAddress: "0xf0ED65D6cF133c6960B7799C636c6ba8BD5E4b47",
 
     params: [
       {

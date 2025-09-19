@@ -36,6 +36,8 @@ contract IDNFTSale is Ownable {
         address nftAddr
     );
 
+    event CancleSaleEvent(string id, uint tokenId, address nftAddr);
+
     constructor() Ownable(msg.sender) {}
 
     // 出售ID
@@ -93,6 +95,8 @@ contract IDNFTSale is Ownable {
         require(saleInfo.amount > 0, "already sale or cancle");
 
         saleInfo.amount = 0;
+
+        emit CancleSaleEvent(saleInfo.id, saleInfo.tokenId, saleInfo.nftAddr);
     }
 
     // 购买NFT
