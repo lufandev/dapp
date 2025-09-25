@@ -10,6 +10,151 @@ import IDNFTRentABI from "@/artifacts/IDNFTRent.json";
 // 全局变量跟踪连接状态
 let isConnecting = false;
 
+// Circuit breaker and retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelay: 1000, // 1 second
+  maxDelay: 5000, // 5 seconds
+};
+
+// Helper function to detect circuit breaker errors
+const isCircuitBreakerError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+
+  const err = error as {
+    message?: string;
+    code?: number;
+    data?: { cause?: { isBrokenCircuitError?: boolean } };
+  };
+  const errorMessage = err.message || "";
+  const errorCode = err.code;
+
+  return (
+    errorCode === -32603 ||
+    errorMessage.includes("circuit breaker is open") ||
+    errorMessage.includes(
+      "Execution prevented because the circuit breaker is open"
+    ) ||
+    Boolean(err.data && err.data.cause && err.data.cause.isBrokenCircuitError)
+  );
+};
+
+// Helper function to detect network/connection errors
+const isNetworkError = (error: unknown): boolean => {
+  if (!error || typeof error !== "object") return false;
+
+  const err = error as { message?: string };
+  const errorMessage = err.message || "";
+
+  return (
+    errorMessage.includes("network") ||
+    errorMessage.includes("connection") ||
+    errorMessage.includes("timeout") ||
+    errorMessage.includes("NETWORK_ERROR") ||
+    errorMessage.includes("CONNECTION_ERROR")
+  );
+};
+
+// Retry function with exponential backoff
+const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  retries: number = RETRY_CONFIG.maxRetries,
+  delay: number = RETRY_CONFIG.baseDelay
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) {
+      throw error;
+    }
+
+    // Check if this is a retryable error
+    if (isCircuitBreakerError(error) || isNetworkError(error)) {
+      console.log(`Retrying after ${delay}ms... (${retries} retries left)`);
+
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      // Exponential backoff with jitter
+      const nextDelay = Math.min(
+        delay * 2 + Math.random() * 1000,
+        RETRY_CONFIG.maxDelay
+      );
+
+      return retryWithBackoff(fn, retries - 1, nextDelay);
+    }
+
+    // If not retryable, throw immediately
+    throw error;
+  }
+};
+
+// Function to reset MetaMask connection
+const resetMetaMaskConnection = async (): Promise<void> => {
+  try {
+    if (
+      typeof window !== "undefined" &&
+      (window as WindowWithEthereum).ethereum
+    ) {
+      // Request a fresh connection
+      await (window as WindowWithEthereum).ethereum!.request({
+        method: "wallet_requestPermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    }
+  } catch (error) {
+    console.log("Could not reset MetaMask connection:", error);
+    // Don't throw here, as this is a best-effort operation
+  }
+};
+
+// Public function to reset connection when circuit breaker errors occur
+export const resetWalletConnection = async (): Promise<{
+  success: boolean;
+  message: string;
+}> => {
+  try {
+    console.log("🔄 Attempting to reset wallet connection...");
+
+    if (typeof window === "undefined") {
+      return { success: false, message: "服务端环境不支持钱包连接重置" };
+    }
+
+    if (!(window as WindowWithEthereum).ethereum) {
+      return { success: false, message: "未检测到钱包，请确保已安装MetaMask" };
+    }
+
+    // Clear any existing connection state
+    isConnecting = false;
+
+    // Request fresh permissions
+    await (window as WindowWithEthereum).ethereum!.request({
+      method: "wallet_requestPermissions",
+      params: [{ eth_accounts: {} }],
+    });
+
+    // Wait a moment for the reset to take effect
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Test the connection
+    const testResult = await trying();
+
+    if (testResult.success) {
+      globalFeedback.toast.success("连接重置成功", "钱包连接已恢复正常");
+      return { success: true, message: "钱包连接已成功重置" };
+    } else {
+      return {
+        success: false,
+        message: "连接重置后仍无法正常连接，请检查网络设置",
+      };
+    }
+  } catch (error) {
+    console.error("Failed to reset wallet connection:", error);
+    const errorMessage = error instanceof Error ? error.message : "未知错误";
+    return { success: false, message: `连接重置失败: ${errorMessage}` };
+  }
+};
+
 // 类型定义
 interface EthereumProvider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -805,14 +950,15 @@ export const buyNFTFromSale = async (
   tokenId: string,
   amount: string = "1"
 ): Promise<string> => {
-  try {
-    const { signer } = await connectOnce();
+  const executeBuy = async (): Promise<string> => {
+    const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
 
     console.log(`🚀 购买NFT - Token ID: ${tokenId}, 数量: ${amount}`);
 
     // 转换参数类型
     const tokenIdBN = ethers.BigNumber.from(tokenId);
+    const amountBN = ethers.BigNumber.from(amount);
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
     const filteredSaleABI = IDNFTSaleABI.filter(
@@ -829,7 +975,10 @@ export const buyNFTFromSale = async (
     // 首先获取销售信息（通过事件日志）
     console.log("🚀 获取销售信息...");
     let saleInfo: {
+      id: string;
+      tokenId: string;
       price: ethers.BigNumber;
+      amount: ethers.BigNumber;
       payToken: string;
       seller: string;
       receiver: string;
@@ -838,7 +987,7 @@ export const buyNFTFromSale = async (
 
     try {
       // 查询SaleEvent事件获取销售信息
-      const filter = contract.filters.SaleEvent(null, tokenIdBN);
+      const filter = contract.filters.SaleEvent();
       const events = await contract.queryFilter(filter, 0, "latest");
 
       if (events.length > 0) {
@@ -848,7 +997,10 @@ export const buyNFTFromSale = async (
 
         if (eventArgs && eventArgs.buyer === ethers.constants.AddressZero) {
           saleInfo = {
+            id: eventArgs.id,
+            tokenId: eventArgs.tokenId,
             price: eventArgs.price,
+            amount: eventArgs.amount,
             payToken: eventArgs.payToken,
             seller: eventArgs.seller,
             receiver: eventArgs.receiver,
@@ -870,27 +1022,118 @@ export const buyNFTFromSale = async (
     if (saleInfo.payToken === ethers.constants.AddressZero) {
       // payToken为0地址，表示使用ETH定价
       throw new Error(
-        "此NFT使用ETH定价，但当前合约版本存在设计缺陷，无法正确处理任何类型的支付。\n\n问题详情：合约的buy函数使用了错误的转账方式，导致无法从买家账户扣款。\n\n建议解决方案：\n1. 联系开发团队修复合约代码\n2. 或联系卖家重新部署修复后的合约\n3. 或等待合约升级"
+        "此NFT使用ETH定价，但当前合约版本不支持ETH支付。请联系卖家使用ERC20代币重新上架。"
       );
     }
 
     // 处理ERC20代币支付
     console.log(`🚀 使用ERC20代币支付: ${saleInfo.payToken}`);
-    console.log(`🚀 价格: ${ethers.utils.formatEther(saleInfo.price)} 代币`);
-
-    // 重要提示：合约设计缺陷警告
-    throw new Error(
-      "合约设计存在严重缺陷，无法正确处理任何类型的支付。\n\n问题详情：\n- 合约的buy函数使用了IERC20.transfer()而不是transferFrom()\n- 这意味着合约试图从自己的余额转账，而不是从买家账户扣款\n- 除非合约地址预先持有足够的代币，否则交易必然失败\n\n这是一个严重的合约设计错误，需要重新部署修复后的合约才能正常使用。\n\n建议解决方案：\n1. 联系开发团队修复合约代码（将transfer改为transferFrom）\n2. 重新部署修复后的合约\n3. 或使用其他正确实现的NFT交易合约"
+    console.log(
+      `🚀 价格: ${ethers.utils.formatEther(saleInfo.price)} 代币`,
+      saleInfo.amount
     );
+
+    // 检查ERC20代币余额和授权
+    console.log("🚀 检查ERC20代币余额和授权...");
+
+    // 创建ERC20代币合约实例
+    const erc20Contract = new ethers.Contract(
+      saleInfo.payToken,
+      [
+        "function balanceOf(address owner) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function allowance(address owner, address spender) view returns (uint256)",
+        "function approve(address spender, uint256 amount) returns (bool)",
+      ],
+      signer
+    );
+
+    // 获取代币余额和小数位
+    const tokenBalance = await erc20Contract.balanceOf(address);
+    const decimals = await erc20Contract.decimals();
+
+    // 格式化余额和价格进行比较
+    const formattedBalance = ethers.utils.formatUnits(tokenBalance, decimals);
+    const formattedPrice = ethers.utils.formatUnits(saleInfo.price, decimals);
+
+    console.log(`🚀 代币余额: ${formattedBalance} 代币`);
+    console.log(`🚀 需要支付: ${formattedPrice} 代币`);
+
+    // 检查余额是否足够
+    if (tokenBalance.lt(saleInfo.price)) {
+      throw new Error(
+        `代币余额不足。当前余额: ${formattedBalance} 代币，需要: ${formattedPrice} 代币`
+      );
+    }
+
+    // 检查授权额度
+    const allowance = await erc20Contract.allowance(address, addresses.nftSale);
+    console.log(
+      `🚀 当前授权额度: ${ethers.utils.formatUnits(allowance, decimals)} 代币`
+    );
+
+    if (allowance.lt(saleInfo.price)) {
+      console.log("🚀 授权额度不足，正在请求授权...");
+      globalFeedback.toast.info(
+        "授权中",
+        "正在请求代币授权，请在钱包中确认..."
+      );
+
+      // 请求授权（授权稍微多一点以避免精度问题）
+      const approveAmount = saleInfo.price.mul(110).div(100); // 授权110%的金额
+      const approveTx = await erc20Contract.approve(
+        addresses.nftSale,
+        approveAmount
+      );
+
+      console.log("🚀 授权交易已发送:", approveTx.hash);
+      globalFeedback.toast.info(
+        "等待确认",
+        "授权交易已发送，等待区块链确认..."
+      );
+
+      // 等待授权交易确认
+      await approveTx.wait();
+      console.log("🚀 授权交易确认完成");
+      globalFeedback.toast.success("授权成功", "代币授权已完成，继续购买...");
+    }
+    console.log("🚀 授权额度足够，开始购买...", tokenIdBN, amountBN);
+    const buyTx = await contract.buy(tokenIdBN, amountBN);
+    console.log("🚀 购买交易已发送:", buyTx.hash);
+
+    globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");
+
+    // 等待交易确认
+    const receipt = await buyTx.wait();
+    console.log("🚀 购买交易确认:", receipt);
+
+    globalFeedback.toast.success("购买成功", `NFT #${tokenId} 购买成功！`);
+
+    return buyTx.hash;
+  };
+
+  try {
+    // Use retry mechanism for circuit breaker and network errors
+    return await retryWithBackoff(executeBuy);
   } catch (error) {
     console.error("🚀 购买NFT失败:", error);
 
     let errorMessage = "购买失败，请重试";
-    if (error instanceof Error) {
+
+    // Check for circuit breaker errors first
+    if (isCircuitBreakerError(error)) {
+      errorMessage = "MetaMask连接异常，请稍后重试或重新连接钱包";
+      // Attempt to reset connection for next time
+      resetMetaMaskConnection().catch(console.log);
+    } else if (isNetworkError(error)) {
+      errorMessage = "网络连接异常，请检查网络连接后重试";
+    } else if (error instanceof Error) {
       if (error.message.includes("buy over amount")) {
-        errorMessage = "购买数量超过可售数量";
+        errorMessage = "购买数量超过可售数量，请检查NFT的可售数量";
       } else if (error.message.includes("Insufficient payment token balance")) {
-        errorMessage = "代币余额不足";
+        errorMessage = "代币余额不足，请确保钱包中有足够的代币";
+      } else if (error.message.includes("execution reverted")) {
+        errorMessage = "交易执行失败，可能是代币余额不足或授权问题";
       } else if (error.message.includes("此NFT使用ETH定价")) {
         errorMessage = error.message;
       } else if (error.message.includes("代币余额不足")) {
@@ -899,6 +1142,32 @@ export const buyNFTFromSale = async (
         errorMessage = error.message;
       } else if (error.message.includes("NFT已售出或未上架")) {
         errorMessage = "NFT已售出或未上架出售";
+      } else if (error.message.includes("user rejected transaction")) {
+        errorMessage = "用户取消了交易";
+      } else if (error.message.includes("insufficient funds")) {
+        errorMessage = "账户余额不足支付Gas费用，请确保有足够的ETH支付交易费";
+      } else if (
+        error.message.includes("ERC20: transfer amount exceeds balance")
+      ) {
+        errorMessage = "代币余额不足，无法完成转账";
+      } else if (
+        error.message.includes("ERC20: transfer amount exceeds allowance")
+      ) {
+        errorMessage = "代币授权额度不足，请重新授权";
+      } else if (error.message.includes("ERC20: approve")) {
+        errorMessage = "代币授权失败，请重试";
+      } else if (error.message.includes("already sale or cancle")) {
+        errorMessage = "NFT已售出或已取消出售";
+      } else if (error.message.includes("not owner")) {
+        errorMessage = "只有NFT持有者才能执行此操作";
+      } else if (error.message.includes("nonce too low")) {
+        errorMessage = "交易序号过低，请重试";
+      } else if (
+        error.message.includes("replacement transaction underpriced")
+      ) {
+        errorMessage = "交易费用过低，请提高Gas价格后重试";
+      } else if (error.message.includes("transaction failed")) {
+        errorMessage = "交易失败，请检查网络状态和参数";
       }
     }
 
