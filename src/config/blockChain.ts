@@ -46,14 +46,16 @@ const confs: NetworkConfiguration[] = [
     chainId: 0xaa36a7,
     nftAddress: "0xf27b70557f83956823c3174bf7955660b7c13a4d",
     // TODO: 用你在Remix部署的实际地址替换这些
-    nftCoreAddress: "0xd6902B0A99b7f101A1D4F0AF343061D1C6ffb7eA",
-    nftSaleAddress: "0x12eFCAb5dD61d7c951748dDc661963723fC49157",
-    nftRentalAddress: "0xf0ED65D6cF133c6960B7799C636c6ba8BD5E4b47",
+    nftCoreAddress: "0x2f99FF9317984ea5A32C122646890dC15602aAc1",
+    nftSaleAddress: "0x0a2b1044aa434dfa057186230757AFc2b8C980D9",
+    nftRentalAddress: "0x93957f4f5fa0be5a51b452eD5C6Fc8D70897F46B",
 
     params: [
       {
         chainId: "0xaa36a7",
-        rpcUrls: ["https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161"],
+        rpcUrls: [
+          "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+        ],
         chainName: "Sepolia",
         nativeCurrency: {
           name: "ETH",

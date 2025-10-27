@@ -36,8 +36,6 @@ contract IDNFTSale is Ownable {
         address nftAddr
     );
 
-    event DebugInfo(address sender, uint amount);
-
     event CancleSaleEvent(string id, uint tokenId, address nftAddr);
 
     constructor() Ownable(msg.sender) {}
@@ -102,7 +100,7 @@ contract IDNFTSale is Ownable {
     }
 
     // 购买NFT
-    function buy(uint tokenId, uint amount) public {
+    function buy(address buyer, uint tokenId, uint amount) public {
         SaleInfo storage saleInfo = saleInfos[tokenId];
 
         // 是否有出售
@@ -110,7 +108,8 @@ contract IDNFTSale is Ownable {
 
         // 是否有余额
         require(
-            IERC20(saleInfo.payToken).balanceOf(msg.sender) >= saleInfo.price,
+            IERC20(saleInfo.payToken).allowance(buyer, address(this)) >=
+                saleInfo.price,
             "Insufficient payment token balance"
         );
 
@@ -119,17 +118,17 @@ contract IDNFTSale is Ownable {
         uint256 sellerAmount = saleInfo.price - fee;
 
         // 转移支付
-        emit DebugInfo(msg.sender, sellerAmount);
-        IERC20(saleInfo.payToken).transfer(saleInfo.receiver, sellerAmount);
-        emit DebugInfo(msg.sender, fee);
-        if (fee > 0) {
-            IERC20(saleInfo.payToken).transfer(PLATFORM, fee);
-        }
+        IERC20(saleInfo.payToken).transferFrom(
+            buyer,
+            saleInfo.receiver,
+            sellerAmount
+        );
+        IERC20(saleInfo.payToken).transferFrom(buyer, PLATFORM, fee);
 
         // 转移NFT所有权
         IERC1155(saleInfo.nftAddr).safeTransferFrom(
             saleInfo.seller,
-            msg.sender,
+            buyer,
             tokenId,
             amount,
             ""
@@ -143,7 +142,7 @@ contract IDNFTSale is Ownable {
             saleInfo.amount,
             saleInfo.payToken,
             saleInfo.seller,
-            msg.sender,
+            buyer,
             saleInfo.receiver,
             saleInfo.nftAddr
         );
