@@ -601,16 +601,18 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
         const buyer = args.buyer;
         const blockNumber = event.blockNumber;
 
-        // 判断是否为上架事件（buyer为零地址且amount不为0）
-        const isListingEvent =
-          buyer === "0x0000000000000000000000000000000000000000" &&
-          amountString !== "0";
+        // 🔥 判断逻辑：
+        // - buyer为零地址 → 上架事件，isForSale = true（如果amount > 0）
+        // - buyer不为零地址 → 购买事件，isForSale = false（已售出）
+        const isZeroAddress = buyer === ethers.constants.AddressZero;
+        const isListingEvent = isZeroAddress && amountString !== "0";
+        const isSoldEvent = !isZeroAddress; // 购买事件
 
         // 更新或设置tokenId的状态
         const currentStatus = tokenSaleStatus.get(tokenIdString);
         if (!currentStatus || blockNumber > currentStatus.latestBlockNumber) {
           tokenSaleStatus.set(tokenIdString, {
-            isForSale: isListingEvent,
+            isForSale: isListingEvent && !isSoldEvent, // 上架且未售出
             latestEvent: event,
             latestBlockNumber: blockNumber,
             eventType: "sale",
@@ -618,8 +620,8 @@ export const getAllNFTsWithSaleInfo = async (): Promise<UserNFTAsset[]> => {
 
           console.log(
             `📝 SaleEvent - NFT #${tokenIdString}: ${
-              isListingEvent ? "上架" : "售出"
-            } (Block: ${blockNumber})`
+              isSoldEvent ? "已购买" : isListingEvent ? "上架" : "售罄"
+            } (Block: ${blockNumber}, Amount: ${amountString})`
           );
         }
       } catch (error) {
@@ -1322,36 +1324,64 @@ export const getNFTSaleInfo = async (
       return null;
     }
 
-    // 分析事件确定当前状态
-    let latestSaleEvent = null;
-    let latestCancelEvent = null;
-
-    // 找到最新的上架事件（buyer为零地址的SaleEvent）
-    for (let i = saleEvents.length - 1; i >= 0; i--) {
-      const event = saleEvents[i];
-      if (event.args && event.args.buyer === ethers.constants.AddressZero) {
-        latestSaleEvent = event;
-        break;
-      }
-    }
+    // 🔥 分析事件确定当前状态
+    // 找到最新的SaleEvent（无论是上架还是购买）
+    const latestSaleEvent = saleEvents[saleEvents.length - 1];
 
     // 找到最新的取消事件
+    let latestCancelEvent = null;
     if (cancelEvents.length > 0) {
       latestCancelEvent = cancelEvents[cancelEvents.length - 1];
     }
 
-    // 判断当前是否在出售中
+    // 🔥 判断当前是否在出售中
     let isForSale = false;
-    if (latestSaleEvent) {
-      // 如果有取消事件，比较时间戳
-      if (latestCancelEvent) {
-        isForSale = latestSaleEvent.blockNumber > latestCancelEvent.blockNumber;
-      } else {
-        isForSale = true;
-      }
+
+    if (!latestSaleEvent.args) {
+      console.log(`❌ NFT #${tokenId} 事件参数为空`);
+      return null;
     }
 
-    if (!isForSale || !latestSaleEvent) {
+    const eventBuyer = latestSaleEvent.args.buyer;
+    const eventAmount = latestSaleEvent.args.amount;
+    const eventBlockNumber = latestSaleEvent.blockNumber;
+
+    console.log(`🔍 NFT #${tokenId} 最新SaleEvent:`, {
+      buyer: eventBuyer,
+      amount: eventAmount.toString(),
+      blockNumber: eventBlockNumber,
+      isListingEvent: eventBuyer === ethers.constants.AddressZero,
+    });
+
+    // 判断逻辑：
+    // 1. 如果最新事件是购买事件（buyer不为零地址），说明已售出
+    // 2. 如果最新事件是上架事件（buyer为零地址），检查是否被取消
+    // 3. 如果amount为0，说明已售罄
+
+    if (eventBuyer !== ethers.constants.AddressZero) {
+      // 最新事件是购买事件，说明已售出
+      console.log(`❌ NFT #${tokenId} 已被购买，不在出售中`);
+      return null;
+    }
+
+    if (eventAmount.eq(0)) {
+      // 剩余数量为0，说明已售罄
+      console.log(`❌ NFT #${tokenId} 已售罄，不在出售中`);
+      return null;
+    }
+
+    // 检查是否有更晚的取消事件
+    if (latestCancelEvent && latestCancelEvent.blockNumber > eventBlockNumber) {
+      console.log(
+        `❌ NFT #${tokenId} 已被取消出售（取消事件在区块 ${latestCancelEvent.blockNumber}）`
+      );
+      return null;
+    }
+
+    // 如果最新事件是上架事件，且没有被取消，amount > 0，则在售
+    isForSale = true;
+
+    if (!isForSale) {
       console.log(`❌ NFT #${tokenId} 当前未在出售`);
       return null;
     }
