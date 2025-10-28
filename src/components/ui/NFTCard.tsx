@@ -37,9 +37,9 @@ const ValueIDCard: React.FC<ValueIDCardProps> = ({
     if (valueIDData) {
       // 将完整的 NFT 数据存储到 sessionStorage
       const storageKey = `nft_data_${id}`;
-      if (typeof window !== 'undefined') {
-      sessionStorage.setItem(storageKey, JSON.stringify(valueIDData));
-    }
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem(storageKey, JSON.stringify(valueIDData));
+      }
 
       // 导航到详情页并传递一个标记参数
       router.push(`/nft/${id}?fromList=true`);

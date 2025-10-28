@@ -308,7 +308,7 @@ export interface UserNFTAsset {
 }
 
 /**
- * 获取用户持有的所有NFT资产 - 基于事件日志
+ * 获取用户持有的所有NFT资产 - 基于ERC1155的balanceOf检查
  * @param userAddress 用户地址
  * @returns 用户的NFT资产列表
  */
@@ -323,9 +323,9 @@ export const getUserNFTAssets = async (
     const targetAddress = userAddress || address;
     const addresses = getContractAddresses();
 
-    console.log("🚀 开始获取用户NFT资产（基于事件日志）");
+    console.log("🚀 开始获取用户NFT资产（基于余额检查）");
     console.log("🚀 用户地址:", targetAddress);
-    console.log("🚀 NFTCore合约地址:", addresses.nftCore);
+    console.log("🚀 IDNFT合约地址:", addresses.nftCore);
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
     const filteredABI = IDNFTABI.filter(
@@ -333,72 +333,98 @@ export const getUserNFTAssets = async (
         item.type === "function" || item.type === "event"
     );
 
-    // 创建NFTCore合约实例
+    // 创建IDNFT合约实例
     const nftCoreContract = new ethers.Contract(
       addresses.nftCore,
       filteredABI,
       provider
     );
 
-    // 获取所有IDNFTMint事件（因为account参数不是索引参数，无法直接过滤）
-    const filter = nftCoreContract.filters.IDNFTMint();
-    const allLogs = await nftCoreContract.queryFilter(filter, 0, "latest");
+    // 🔥 步骤1: 通过 IDNFTMint 事件获取所有曾经铸造的 tokenId
+    const mintFilter = nftCoreContract.filters.IDNFTMint();
+    const mintLogs = await nftCoreContract.queryFilter(mintFilter, 0, "latest");
 
-    // 手动过滤用户相关的事件
-    const logs = allLogs.filter((log: unknown) => {
-      const logEvent = log as LogEvent;
-      return (
-        logEvent.args.account.toLowerCase() === targetAddress.toLowerCase()
-      );
-    });
+    console.log(`🚀 找到 ${mintLogs.length} 条铸造记录`);
 
-    console.log(`🚀 找到 ${logs.length} 条注册记录`);
-
-    if (logs.length === 0) {
+    if (mintLogs.length === 0) {
       return [];
     }
 
     const assets: UserNFTAsset[] = [];
 
-    // 处理每个注册事件
-    for (let i = 0; i < logs.length; i++) {
+    // 用Set去重tokenId，用Map存储tokenId对应的id信息
+    const tokenIds = new Set<string>();
+    const tokenIdToInfo = new Map<string, { id: string }>();
+
+    // 收集所有tokenId和对应的id信息
+    for (const log of mintLogs) {
+      const logEvent = log as unknown as LogEvent;
+      const tokenIdString = logEvent.args.tokenId.toString();
+      const finalID = logEvent.args.id;
+
+      tokenIds.add(tokenIdString);
+      if (!tokenIdToInfo.has(tokenIdString)) {
+        tokenIdToInfo.set(tokenIdString, { id: finalID });
+      }
+    }
+
+    console.log(`🚀 共有 ${tokenIds.size} 个不同的 tokenId`);
+
+    // 🔥 步骤2: 检查用户对每个tokenId的余额
+    let processedCount = 0;
+    for (const tokenIdString of tokenIds) {
       try {
-        const log = logs[i];
-        const logEvent = log as unknown as LogEvent;
-
-        const tokenIdString = logEvent.args.tokenId.toString();
-        const finalID = logEvent.args.id;
-
-        console.log(
-          `🚀 第${
-            i + 1
-          }个NFT - Token ID: ${tokenIdString}, Final ID: ${finalID}`
+        // 使用 balanceOf 检查用户是否持有该 tokenId
+        const balance = await nftCoreContract.balanceOf(
+          targetAddress,
+          tokenIdString
         );
 
-        // 获取tokenURI
-        let tokenURI;
-        try {
-          tokenURI = await nftCoreContract.uri(tokenIdString);
-        } catch (error) {
-          console.log(`🚀 无法获取NFT #${tokenIdString} 的tokenURI:`, error);
-          tokenURI = finalID; // 使用finalID作为备用
-        }
+        console.log(
+          `🚀 [${++processedCount}/${
+            tokenIds.size
+          }] NFT #${tokenIdString} 余额: ${balance.toString()}`
+        );
 
-        console.log(`🚀 NFT详情 - ID: ${finalID}, URI: ${tokenURI}`);
+        // 只有余额大于0才添加到资产列表
+        if (balance.gt(0)) {
+          const info = tokenIdToInfo.get(tokenIdString);
+          const finalID = info?.id || `NFT #${tokenIdString}`;
 
-        // 获取出售信息（使用新的NFTSale合约）
-        let saleInfo: NFTSaleInfo;
-        try {
-          const nftSaleInfo = await getNFTSaleInfo(tokenIdString);
-          if (nftSaleInfo) {
-            saleInfo = {
-              seller: nftSaleInfo.seller,
-              price: nftSaleInfo.price,
-              payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852", // ETH
-              receiver: nftSaleInfo.seller,
-              isForSale: true,
-            };
-          } else {
+          // 获取tokenURI
+          let tokenURI;
+          try {
+            tokenURI = await nftCoreContract.uri(tokenIdString);
+          } catch (error) {
+            console.log(`🚀 无法获取NFT #${tokenIdString} 的URI:`, error);
+            tokenURI = finalID;
+          }
+
+          console.log(`🚀 NFT详情 - ID: ${finalID}, URI: ${tokenURI}`);
+
+          // 获取出售信息
+          let saleInfo: NFTSaleInfo;
+          try {
+            const nftSaleInfo = await getNFTSaleInfo(tokenIdString);
+            if (nftSaleInfo && nftSaleInfo.isForSale) {
+              saleInfo = {
+                seller: nftSaleInfo.seller,
+                price: nftSaleInfo.price,
+                payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
+                receiver: nftSaleInfo.receiver,
+                isForSale: true,
+              };
+            } else {
+              saleInfo = {
+                seller: "0x0000000000000000000000000000000000000000",
+                price: "0",
+                payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
+                receiver: "0x0000000000000000000000000000000000000000",
+                isForSale: false,
+              };
+            }
+          } catch (error) {
+            console.log(`🚀 无法获取NFT #${tokenIdString} 的出售信息:`, error);
             saleInfo = {
               seller: "0x0000000000000000000000000000000000000000",
               price: "0",
@@ -407,34 +433,28 @@ export const getUserNFTAssets = async (
               isForSale: false,
             };
           }
-        } catch (error) {
-          console.log(`🚀 无法获取NFT #${tokenIdString} 的出售信息:`, error);
-          saleInfo = {
-            seller: "0x0000000000000000000000000000000000000000",
-            price: "0",
-            payToken: "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852",
-            receiver: "0x0000000000000000000000000000000000000000",
-            isForSale: false,
+
+          // 构造NFT资产对象
+          const asset: UserNFTAsset = {
+            tokenId: tokenIdString,
+            name: finalID || `NFT #${tokenIdString}`,
+            idString: finalID,
+            image: `/images/nft${(assets.length % 6) + 1}.jpg`,
+            saleInfo: saleInfo,
+            owner: targetAddress,
           };
+
+          assets.push(asset);
+          console.log(`✅ 添加NFT #${tokenIdString} 到资产列表`);
+        } else {
+          console.log(`⏭️ 跳过NFT #${tokenIdString} (余额为0)`);
         }
-
-        // 构造NFT资产对象
-        const asset: UserNFTAsset = {
-          tokenId: tokenIdString,
-          name: finalID || `NFT #${tokenIdString}`,
-          idString: finalID,
-          image: `/images/nft${(i % 6) + 1}.jpg`, // 临时使用本地图片
-          saleInfo: saleInfo,
-          owner: targetAddress,
-        };
-
-        assets.push(asset);
       } catch (error) {
-        console.error(`🚀 处理第${i + 1}个注册记录失败:`, error);
+        console.error(`🚀 处理NFT #${tokenIdString} 失败:`, error);
       }
     }
 
-    console.log("🚀 获取NFT资产完成:", assets);
+    console.log(`🚀 获取NFT资产完成，共 ${assets.length} 个NFT`);
     return assets;
   } catch (error) {
     console.error("🚀 获取用户NFT资产失败:", error);
@@ -947,6 +967,7 @@ export const listNFTForSale = async (
  * @returns 交易哈希
  */
 export const buyNFTFromSale = async (
+  buyer: string,
   tokenId: string,
   amount: string = "1"
 ): Promise<string> => {
@@ -1038,7 +1059,7 @@ export const buyNFTFromSale = async (
 
     // 创建ERC20代币合约实例
     const erc20Contract = new ethers.Contract(
-      saleInfo.payToken,
+      saleInfo.payToken, // "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852"
       [
         "function balanceOf(address owner) view returns (uint256)",
         "function decimals() view returns (uint8)",
@@ -1098,7 +1119,7 @@ export const buyNFTFromSale = async (
       globalFeedback.toast.success("授权成功", "代币授权已完成，继续购买...");
     }
     console.log("🚀 授权额度足够，开始购买...", tokenIdBN, amountBN);
-    const buyTx = await contract.buy(tokenIdBN, amountBN);
+    const buyTx = await contract.buy(buyer, tokenIdBN, amountBN);
     console.log("🚀 购买交易已发送:", buyTx.hash);
 
     globalFeedback.toast.success("交易已发送", "正在等待区块链确认...");

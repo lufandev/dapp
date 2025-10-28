@@ -664,6 +664,7 @@ export default function NFTDetailPage() {
                               "@/common/connection-service"
                             );
                             const txHash = await buyNFTFromSale(
+                              userAddress || "",
                               valueId.tokenId
                             );
 
@@ -744,6 +745,7 @@ export default function NFTDetailPage() {
                               "@/common/connection-service"
                             );
                             const txHash = await buyNFTFromSale(
+                              userAddress || "",
                               valueId.tokenId
                             );
 
