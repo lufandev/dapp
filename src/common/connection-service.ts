@@ -1421,26 +1421,27 @@ export const getNFTSaleInfo = async (
  * 上架NFT出租
  * @param tokenId NFT的token ID
  * @param pricePerDayInEth 每日租金（ETH单位）
- * @param maxDays 最大租赁天数
+ * @param durationDays 租赁天数（合约中的durationDays参数）
  * @param id 租赁ID
- * @param rentReceiver 租金接收地址
  * @param nftAddr NFT合约地址
  * @returns 交易哈希
  */
 export const listNFTForRent = async (
   tokenId: string,
   pricePerDayInEth: string,
-  maxDays: number,
+  durationDays: number,
   id: string = "",
-  rentReceiver?: string,
   nftAddr?: string
 ): Promise<string> => {
   try {
     const { signer, address } = await connectOnce();
     const addresses = getContractAddresses();
 
+    // 🔥 计算总租金 = 每日租金 × 天数
+    const totalRentFee = parseFloat(pricePerDayInEth) * durationDays;
+
     console.log(
-      `🚀 上架NFT出租 - Token ID: ${tokenId}, 每日租金: ${pricePerDayInEth} ETH, 最大天数: ${maxDays}`
+      `🚀 上架NFT出租 - Token ID: ${tokenId}, 每日租金: ${pricePerDayInEth} 代币, 租期: ${durationDays}天, 总租金: ${totalRentFee} 代币`
     );
 
     // 过滤ABI，只保留函数和事件定义，排除error定义
@@ -1454,17 +1455,32 @@ export const listNFTForRent = async (
       filteredRentABI,
       signer
     );
-    const rentFeeInWei = ethers.utils.parseEther(pricePerDayInEth);
-    const finalRentReceiver = rentReceiver || address;
-    const finalNftAddr = nftAddr || addresses.nftCore;
-    const payToken = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852"; // ETH
 
-    // 根据ABI，listForRent需要7个参数：tokenId, id, nftAddr, durationDays, rentReceiver, token, rentFee
+    // 🔥 合约参数说明：
+    // - rentFee: 总租金（不是每日租金）
+    // - durationDays: 租期天数（合约用于计算endTime）
+    const rentFeeInWei = ethers.utils.parseEther(totalRentFee.toString());
+    const finalRentReceiver = address;
+    const finalNftAddr = nftAddr || addresses.nftCore;
+    const payToken = "0xC74d33a78Bf73d42CD7c9c236f4c819941B35852"; // 支付代币地址
+
+    console.log("🚀 合约调用参数:", {
+      tokenId,
+      id,
+      nftAddr: finalNftAddr,
+      durationDays,
+      rentReceiver: finalRentReceiver,
+      payToken,
+      rentFee: rentFeeInWei.toString(),
+    });
+
+    // 根据合约ABI，listForRent需要7个参数：
+    // function listForRent(uint tokenId, string id, address nftAddr, uint256 durationDays, address rentReceiver, address token, uint256 rentFee)
     const tx = await contract.listForRent(
       tokenId,
       id,
       finalNftAddr,
-      maxDays,
+      durationDays,
       finalRentReceiver,
       payToken,
       rentFeeInWei
@@ -1476,7 +1492,7 @@ export const listNFTForRent = async (
     await tx.wait();
     globalFeedback.toast.success(
       "上架成功",
-      `NFT #${tokenId} 已成功上架出租！`
+      `NFT #${tokenId} 已成功上架出租！每日租金: ${pricePerDayInEth} 代币，租期: ${durationDays}天`
     );
 
     return tx.hash;
@@ -1485,14 +1501,16 @@ export const listNFTForRent = async (
 
     let errorMessage = "上架失败，请重试";
     if (error instanceof Error) {
-      if (error.message.includes("Not NFT owner")) {
+      if (error.message.includes("not owner")) {
         errorMessage = "只有NFT拥有者才能上架出租";
+      } else if (error.message.includes("Platform not authorized")) {
+        errorMessage = "该ID尚未授权平台，请联系管理员授权";
       } else if (error.message.includes("Already rented")) {
         errorMessage = "NFT已在租赁中";
-      } else if (error.message.includes("PricePerDay=0")) {
-        errorMessage = "每日租金必须大于0";
-      } else if (error.message.includes("MaxDays=0")) {
-        errorMessage = "最大天数必须大于0";
+      } else if (error.message.includes("user rejected")) {
+        errorMessage = "用户取消了交易";
+      } else if (error.message.includes("insufficient funds")) {
+        errorMessage = "账户余额不足支付Gas费用";
       }
     }
 

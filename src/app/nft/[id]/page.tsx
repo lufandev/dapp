@@ -140,9 +140,8 @@ export default function NFTDetailPage() {
   const [rentModalOpen, setRentModalOpen] = useState(false);
   const [rentPrice, setRentPrice] = useState("");
   const [rentDeposit, setRentDeposit] = useState("");
-  const [rentDuration, setRentDuration] = useState("");
+  const [rentDuration, setRentDuration] = useState(0);
   const [rentCurrency, setRentCurrency] = useState("ETH");
-  const [rentAddress, setRentAddress] = useState("");
 
   // 处理出售表单提交
   const handleSellSubmit = async () => {
@@ -216,31 +215,80 @@ export default function NFTDetailPage() {
   const handleRentSubmit = async () => {
     const confirmed = await confirm({
       title: "确认出租",
-      message: `确认以 ${rentPrice} ${rentCurrency}/天的价格出租此NFT ${rentDuration}天吗？`,
+      message: `确认以 ${rentPrice} ${rentCurrency}/天的价格出租此NFT ${rentDuration}天吗？总租金: ${
+        parseFloat(rentPrice) * rentDuration
+      } ${rentCurrency}`,
       type: "info",
       confirmText: "确认出租",
       cancelText: "取消",
     });
 
-    if (confirmed) {
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      if (!valueId) {
+        toast.error("错误", "NFT信息不存在");
+        return;
+      }
+
+      // 验证参数
+      if (!rentPrice || parseFloat(rentPrice) <= 0) {
+        toast.error("错误", "租金必须大于0");
+        return;
+      }
+
+      if (!rentDuration || rentDuration <= 0) {
+        toast.error("错误", "租赁天数必须大于0");
+        return;
+      }
+
+      console.log("🚀 开始上架出租:", {
+        tokenId: valueId.tokenId,
+        rentPrice,
+        rentDuration,
+        id: valueId.id,
+        totalRent: parseFloat(rentPrice) * rentDuration,
+      });
+
+      const { listNFTForRent } = await import("@/common/connection-service");
+
+      const txHash = await listNFTForRent(
+        valueId.tokenId,
+        rentPrice,
+        rentDuration,
+        valueId.id
+      );
+
+      console.log("🚀 出租交易成功，哈希:", txHash);
+
+      // 🔥 5. 成功后提示
       toast.success(
         "出租成功",
-        t("rent.success", {
-          price: rentPrice,
-          currency: rentCurrency,
-          deposit: rentDeposit,
-          duration: rentDuration,
-          address: rentAddress as string,
-        })
+        `NFT已成功上架出租！每日租金: ${rentPrice} ${rentCurrency}, 租期: ${rentDuration}天`
       );
+
       setRentModalOpen(false);
-      // 更新NFT状态为出租中
+
+      // 🔥 6. 可选：更新本地状态（如果需要的话）
       if (valueId) {
         setValueId({
           ...valueId,
           isForRent: true,
           rentalPrice: parseFloat(rentPrice),
         });
+      }
+    } catch (error) {
+      console.error("🚀 上架出租失败:", error);
+      // 错误已经在 listNFTForRent 函数中通过 globalFeedback.toast 处理了
+      // 这里可以添加额外的错误处理逻辑
+      if (error instanceof Error) {
+        if (error.message.includes("Platform not authorized")) {
+          toast.error("授权失败", "该ID尚未授权平台，请联系管理员授权后再试");
+        } else if (error.message.includes("not owner")) {
+          toast.error("权限错误", "只有NFT拥有者才能上架出租");
+        }
       }
     }
   };
@@ -914,7 +962,7 @@ export default function NFTDetailPage() {
               <Input
                 type="number"
                 value={rentDuration}
-                onChange={(e) => setRentDuration(e.target.value)}
+                onChange={(e) => setRentDuration(parseInt(e.target.value) || 0)}
                 placeholder="1"
               />
             </div>
@@ -942,9 +990,18 @@ export default function NFTDetailPage() {
               </label>
               <Input
                 type="text"
-                value={rentAddress}
-                onChange={(e) => setRentAddress(e.target.value)}
+                value={sellAddress}
+                readOnly
+                disabled
+                style={{
+                  backgroundColor: "var(--disabled-background, #f5f5f5)",
+                  color: "var(--disabled-color, #888)",
+                }}
+                placeholder="钱包地址加载中..."
               />
+              <div className="text-xs text-gray-500 mt-1">
+                收款地址为您当前连接的钱包地址
+              </div>
             </div>
             <div className="flex gap-[16px]">
               <Button
