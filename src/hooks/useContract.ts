@@ -1,23 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
-import { UserNFTAsset } from '../common/connection-service';
-import { globalFeedback } from '../components/ui/Feedback';
+import { useState, useEffect, useCallback } from "react";
+import { UserNFTAsset } from "../common/connection-service";
+import { globalFeedback } from "../components/ui/Feedback";
 
 // 使用动态导入避免服务端渲染问题
 const getConnectionService = async () => {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return {
       getUserNFTAssets: async () => [],
       getAllNFTsWithSaleInfo: async () => [],
       getCurrentUserNFTAssets: async () => [],
-      buyNFTFromSale: async () => '',
-      rentNFT: async () => '',
-      listNFTForSale: async () => '',
-      listNFTForRent: async () => '',
-      cancelNFTSale: async () => '',
-      cancelNFTRent: async () => '',
+      buyNFTFromSale: async () => "",
+      rentNFT: async () => "",
+      listNFTForSale: async () => "",
+      listNFTForRent: async () => "",
+      cancelNFTSale: async () => "",
+      cancelNFTRent: async () => "",
     };
   }
-  const connectionService = await import('../common/connection-service');
+  const connectionService = await import("../common/connection-service");
   return {
     getUserNFTAssets: connectionService.getUserNFTAssets,
     getAllNFTsWithSaleInfo: connectionService.getAllNFTsWithSaleInfo,
@@ -36,27 +36,30 @@ export const useContract = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const executeTransaction = useCallback(async (operation: () => Promise<string>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await operation();
-      globalFeedback.toast.success('交易成功');
-      return result;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : '交易失败';
-      setError(errorMessage);
-      globalFeedback.toast.error('交易失败', errorMessage);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const executeTransaction = useCallback(
+    async (operation: () => Promise<string>) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await operation();
+        globalFeedback.toast.success("交易成功");
+        return result;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : "交易失败";
+        setError(errorMessage);
+        globalFeedback.toast.error("交易失败", errorMessage);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   return {
     loading,
     error,
-    executeTransaction
+    executeTransaction,
   };
 };
 
@@ -71,19 +74,19 @@ export const useUserNFTs = (userAddress?: string) => {
     setError(null);
     try {
       const service = await getConnectionService();
-      const result = userAddress 
+      const result = userAddress
         ? await service.getUserNFTAssets(userAddress)
         : await service.getCurrentUserNFTAssets();
       setNfts(result);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '获取NFT失败');
+      setError(err instanceof Error ? err.message : "获取NFT失败");
     } finally {
       setLoading(false);
     }
   }, [userAddress]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     fetchUserNFTs();
   }, [fetchUserNFTs]);
 
@@ -91,7 +94,7 @@ export const useUserNFTs = (userAddress?: string) => {
     nfts,
     loading,
     error,
-    refetch: fetchUserNFTs
+    refetch: fetchUserNFTs,
   };
 };
 
@@ -109,14 +112,14 @@ export const useMarketNFTs = () => {
       const result = await service.getAllNFTsWithSaleInfo();
       setSaleNFTs(result);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : '获取市场NFT失败');
+      setError(err instanceof Error ? err.message : "获取市场NFT失败");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
     fetchMarketNFTs();
   }, [fetchMarketNFTs]);
 
@@ -124,7 +127,7 @@ export const useMarketNFTs = () => {
     saleNFTs,
     loading,
     error,
-    refetch: fetchMarketNFTs
+    refetch: fetchMarketNFTs,
   };
 };
 
@@ -132,47 +135,65 @@ export const useMarketNFTs = () => {
 export const useNFTTrading = () => {
   const { executeTransaction } = useContract();
 
-  const buyNFT = useCallback(async (tokenId: string) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.buyNFTFromSale(tokenId);
-    });
-  }, [executeTransaction]);
+  const buyNFT = useCallback(
+    async (tokenId: string) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.buyNFTFromSale("", tokenId);
+      });
+    },
+    [executeTransaction]
+  );
 
-  const rentNFTToken = useCallback(async (tokenId: string, days: number) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.rentNFT(tokenId, days);
-    });
-  }, [executeTransaction]);
+  const rentNFTToken = useCallback(
+    async (tokenId: string, days: number) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.rentNFT(tokenId, days);
+      });
+    },
+    [executeTransaction]
+  );
 
-  const listForSale = useCallback(async (tokenId: string, priceInEth: string) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.listNFTForSale(tokenId, priceInEth);
-    });
-  }, [executeTransaction]);
+  const listForSale = useCallback(
+    async (tokenId: string, priceInEth: string) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.listNFTForSale(tokenId, priceInEth);
+      });
+    },
+    [executeTransaction]
+  );
 
-  const listForRent = useCallback(async (tokenId: string, pricePerDayInEth: string, maxDays: number) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.listNFTForRent(tokenId, pricePerDayInEth, maxDays);
-    });
-  }, [executeTransaction]);
+  const listForRent = useCallback(
+    async (tokenId: string, pricePerDayInEth: string, maxDays: number) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.listNFTForRent(tokenId, pricePerDayInEth, maxDays);
+      });
+    },
+    [executeTransaction]
+  );
 
-  const cancelSale = useCallback(async (tokenId: string) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.cancelNFTSale(tokenId);
-    });
-  }, [executeTransaction]);
+  const cancelSale = useCallback(
+    async (tokenId: string) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.cancelNFTSale(tokenId);
+      });
+    },
+    [executeTransaction]
+  );
 
-  const cancelRent = useCallback(async (tokenId: string) => {
-    return executeTransaction(async () => {
-      const service = await getConnectionService();
-      return service.cancelNFTRent(tokenId);
-    });
-  }, [executeTransaction]);
+  const cancelRent = useCallback(
+    async (tokenId: string) => {
+      return executeTransaction(async () => {
+        const service = await getConnectionService();
+        return service.cancelNFTRent(tokenId);
+      });
+    },
+    [executeTransaction]
+  );
 
   return {
     buyNFT,
@@ -180,7 +201,7 @@ export const useNFTTrading = () => {
     listForSale,
     listForRent,
     cancelSale,
-    cancelRent
+    cancelRent,
   };
 };
 
@@ -199,32 +220,32 @@ export const useNFTManager = (userAddress?: string) => {
     userNFTs,
     marketNFTs,
     trading,
-    refetchAll
+    refetchAll,
   };
 };
 
 // 简化的特定功能Hooks
 export const useUserSaleList = (userAddress?: string) => {
   const { nfts, loading, error, refetch } = useUserNFTs(userAddress);
-  const saleNFTs = nfts.filter(nft => nft.saleInfo?.isForSale);
-  
+  const saleNFTs = nfts.filter((nft) => nft.saleInfo?.isForSale);
+
   return {
     saleNFTs,
     loading,
     error,
-    refetch
+    refetch,
   };
 };
 
 export const useAllSaleList = () => {
   const { saleNFTs, loading, error, refetch } = useMarketNFTs();
-  const forSaleNFTs = saleNFTs.filter(nft => nft.saleInfo?.isForSale);
-  
+  const forSaleNFTs = saleNFTs.filter((nft) => nft.saleInfo?.isForSale);
+
   return {
     saleNFTs: forSaleNFTs,
     loading,
     error,
-    refetch
+    refetch,
   };
 };
 
@@ -237,7 +258,7 @@ export const useUserRentalList = () => {
     rentalNFTs: [],
     loading: false,
     error: null,
-    refetch: () => {}
+    refetch: () => {},
   };
 };
 
@@ -248,6 +269,6 @@ export const useAllRentalList = () => {
     rentalNFTs: [],
     loading: false,
     error: null,
-    refetch: () => {}
+    refetch: () => {},
   };
 };
