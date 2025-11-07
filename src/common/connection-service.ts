@@ -1418,6 +1418,64 @@ export const getNFTSaleInfo = async (
 // ========== NFTRental 合约相关函数 ==========
 
 /**
+ * 授权平台（只有合约owner可以调用）
+ * @param platformAddress 平台地址
+ * @param id 要授权的ID
+ * @returns 交易哈希
+ */
+export const authorizePlatform = async (
+  platformAddress: string,
+  id: string
+): Promise<string> => {
+  try {
+    const { signer } = await connectOnce();
+    const addresses = getContractAddresses();
+
+    console.log(`🚀 授权平台 - Platform: ${platformAddress}, ID: ${id}`);
+
+    // 过滤ABI，只保留函数和事件定义，排除error定义
+    const filteredRentABI = IDNFTRentABI.filter(
+      (item: { type: string }) =>
+        item.type === "function" || item.type === "event"
+    );
+
+    const contract = new ethers.Contract(
+      addresses.nftRental,
+      filteredRentABI,
+      signer
+    );
+
+    // 调用authorizePlatform函数
+    const tx = await contract.authorizePlatform(platformAddress, id);
+    console.log("🚀 授权交易已发送:", tx.hash);
+
+    globalFeedback.toast.success("授权交易已发送", "正在等待区块链确认...");
+
+    await tx.wait();
+    console.log("🚀 授权交易确认完成");
+    globalFeedback.toast.success("授权成功", `ID "${id}" 已成功授权给平台`);
+
+    return tx.hash;
+  } catch (error) {
+    console.error("🚀 授权平台失败:", error);
+
+    let errorMessage = "授权失败，请重试";
+    if (error instanceof Error) {
+      if (error.message.includes("Ownable: caller is not the owner")) {
+        errorMessage = "只有合约所有者才能授权平台";
+      } else if (error.message.includes("user rejected")) {
+        errorMessage = "用户取消了交易";
+      } else if (error.message.includes("insufficient funds")) {
+        errorMessage = "账户余额不足支付Gas费用";
+      }
+    }
+
+    globalFeedback.toast.error("授权失败", errorMessage);
+    throw error;
+  }
+};
+
+/**
  * 上架NFT出租
  * @param tokenId NFT的token ID
  * @param pricePerDayInEth 每日租金（ETH单位）

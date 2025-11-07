@@ -252,8 +252,30 @@ export default function NFTDetailPage() {
         totalRent: parseFloat(rentPrice) * rentDuration,
       });
 
-      const { listNFTForRent } = await import("@/common/connection-service");
+      const { listNFTForRent, authorizePlatform } = await import(
+        "@/common/connection-service"
+      );
+      // 未授权，需要先授权
+      console.log(`⚠️ ID "${valueId.id}" 尚未授权，开始授权...`);
+      toast.info("授权中", "正在授权平台，请在钱包中确认授权交易...");
 
+      try {
+        // 授权给当前用户地址作为平台地址
+        await authorizePlatform(
+          "0x0a2b1044aa434dfa057186230757AFc2b8C980D9",
+          valueId.id
+        );
+        console.log(`✅ ID "${valueId.id}" 授权成功`);
+      } catch (authError) {
+        console.error("🚀 授权失败:", authError);
+        toast.error(
+          "授权失败",
+          "无法授权平台，请确保您是合约所有者或联系管理员授权"
+        );
+        return; // 授权失败则不继续上架
+      }
+
+      // 🔥 步骤2: 授权完成后，调用上架出租
       const txHash = await listNFTForRent(
         valueId.tokenId,
         rentPrice,
